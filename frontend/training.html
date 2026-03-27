@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ReplyMan - Тренировка</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤖</text></svg>">
+</head>
+<body>
+    <button class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
+    
+    <div class="app-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-logo">
+                <div class="logo-icon">🤖</div>
+                <h1>ReplyMan</h1>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" class="nav-item" data-page="chat">
+                    <span>💬</span>
+                    <span>Чат с ИИ</span>
+                </a>
+                <a href="files.html" class="nav-item" data-page="files">
+                    <span>📁</span>
+                    <span>Файлы переписки</span>
+                </a>
+                <a href="training.html" class="nav-item active" data-page="training">
+                    <span>🎓</span>
+                    <span>Тренировка</span>
+                </a>
+                <a href="instructions.html" class="nav-item" data-page="instructions">
+                    <span>⚙️</span>
+                    <span>Инструкции ИИ</span>
+                </a>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <div class="user-avatar" id="userAvatar">U</div>
+                    <div>
+                        <div class="user-name" id="userName">Пользователь</div>
+                        <div class="user-email" id="userEmail">user@email.com</div>
+                    </div>
+                </div>
+                <button class="nav-item" id="logoutBtn" style="margin-top: 10px; color: rgba(255,255,255,0.7);">
+                    <span>🚪</span>
+                    <span>Выйти</span>
+                </button>
+            </div>
+        </aside>
+        
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="page-header">
+                <h2>🎓 Тренировка общения</h2>
+                <p>Потренируйтесь общаться с клиентами в безопасной среде с обратной связью от ИИ</p>
+            </div>
+            
+            <div id="alertContainer"></div>
+            
+            <!-- Training Status -->
+            <div class="training-status inactive" id="trainingStatus">
+                <div class="status-dot"></div>
+                <span id="trainingStatusText">Тренировка не начата</span>
+            </div>
+            
+            <!-- Scenario Selection (shown when not in training) -->
+            <div class="card mb-30" id="scenarioSelection">
+                <div class="card-header">
+                    <h3 class="card-title">Выберите сценарий</h3>
+                </div>
+                
+                <div class="scenarios-grid" id="scenariosGrid">
+                    <div class="scenario-card selected" data-scenario="general">
+                        <div class="scenario-icon">💬</div>
+                        <div class="scenario-title">Общение с клиентом</div>
+                        <p class="scenario-desc">Типичные вопросы о продукции и услугах компании</p>
+                    </div>
+                    
+                    <div class="scenario-card" data-scenario="sales">
+                        <div class="scenario-icon">💰</div>
+                        <div class="scenario-title">Продажи</div>
+                        <p class="scenario-desc">Работа с возражениями и завершение сделки</p>
+                    </div>
+                    
+                    <div class="scenario-card" data-scenario="support">
+                        <div class="scenario-icon">🛠️</div>
+                        <div class="scenario-title">Техподдержка</div>
+                        <p class="scenario-desc">Решение проблем и ответы на жалобы клиентов</p>
+                    </div>
+                    
+                    <div class="scenario-card" data-scenario="installation">
+                        <div class="scenario-icon">🔧</div>
+                        <div class="scenario-title">Монтаж</div>
+                        <p class="scenario-desc">Вопросы по установке и измерению изделий</p>
+                    </div>
+                </div>
+                
+                <div class="flex-center mt-30">
+                    <button class="btn btn-primary btn-lg" id="startTrainingBtn">
+                        🚀 Начать тренировку
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Training Chat (shown during training) -->
+            <div class="card hidden" id="trainingChat">
+                <div class="chat-container">
+                    <div class="chat-messages" id="trainingMessages">
+                        <!-- Messages will be added here -->
+                    </div>
+                    
+                    <div class="chat-input-area">
+                        <div class="chat-input-wrapper">
+                            <textarea 
+                                class="chat-input" 
+                                id="trainingInput" 
+                                placeholder="Введите ваш ответ клиенту..." 
+                                rows="1"
+                            ></textarea>
+                            <button class="chat-send-btn" id="trainingSendBtn" title="Отправить">
+                                <span>➤</span>
+                            </button>
+                        </div>
+                        <div class="flex-between mt-20">
+                            <button class="btn btn-secondary" id="endTrainingBtn">
+                                🏁 Завершить тренировку
+                            </button>
+                            <span class="text-secondary" id="messageCounter">Сообщений: 0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Training Feedback (shown after training) -->
+            <div class="card hidden" id="trainingFeedback">
+                <div class="card-header">
+                    <h3 class="card-title">📊 Результаты тренировки</h3>
+                    <button class="btn btn-primary" id="newTrainingBtn">
+                        🔄 Новая тренировка
+                    </button>
+                </div>
+                
+                <div class="training-feedback">
+                    <div class="feedback-score">
+                        <div class="score-circle" id="feedbackScore">0</div>
+                        <div>
+                            <h4 style="margin: 0;">Общая оценка</h4>
+                            <p class="text-secondary" style="margin: 5px 0 0;">из 10 баллов</p>
+                        </div>
+                    </div>
+                    
+                    <div class="feedback-section" id="strengthsSection">
+                        <h4>✅ Сильные стороны</h4>
+                        <ul class="feedback-list" id="strengthsList"></ul>
+                    </div>
+                    
+                    <div class="feedback-section" id="weaknessesSection">
+                        <h4>⚠️ Зоны роста</h4>
+                        <ul class="feedback-list" id="weaknessesList"></ul>
+                    </div>
+                    
+                    <div class="feedback-section" id="recommendationsSection">
+                        <h4>💡 Рекомендации</h4>
+                        <ul class="feedback-list" id="recommendationsList"></ul>
+                    </div>
+                    
+                    <div class="feedback-section">
+                        <h4>📝 Полный разбор</h4>
+                        <div id="fullFeedback" style="white-space: pre-wrap; line-height: 1.8; padding: 15px; background: var(--bg-primary); border-radius: var(--border-radius-sm);"></div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <script src="js/config.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/training.js"></script>
+</body>
+</html>

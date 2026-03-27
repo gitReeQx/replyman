@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ReplyMan - Личный кабинет</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤖</text></svg>">
+</head>
+<body>
+    <button class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
+    
+    <div class="app-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-logo">
+                <div class="logo-icon">🤖</div>
+                <h1>ReplyMan</h1>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" class="nav-item active" data-page="chat">
+                    <span>💬</span>
+                    <span>Чат с ИИ</span>
+                </a>
+                <a href="files.html" class="nav-item" data-page="files">
+                    <span>📁</span>
+                    <span>Файлы переписки</span>
+                </a>
+                <a href="training.html" class="nav-item" data-page="training">
+                    <span>🎓</span>
+                    <span>Тренировка</span>
+                </a>
+                <a href="instructions.html" class="nav-item" data-page="instructions">
+                    <span>⚙️</span>
+                    <span>Инструкции ИИ</span>
+                </a>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <div class="user-avatar" id="userAvatar">U</div>
+                    <div>
+                        <div class="user-name" id="userName">Пользователь</div>
+                        <div class="user-email" id="userEmail">user@email.com</div>
+                    </div>
+                </div>
+                <button class="nav-item" id="logoutBtn" style="margin-top: 10px; color: rgba(255,255,255,0.7);">
+                    <span>🚪</span>
+                    <span>Выйти</span>
+                </button>
+            </div>
+        </aside>
+        
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="page-header">
+                <h2>💬 Чат с ИИ-ассистентом</h2>
+                <p>Задавайте вопросы и получайте ответы на основе вашей переписки</p>
+            </div>
+            
+            <!-- Stats -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="filesCount">0</div>
+                    <div class="stat-label">Загружено файлов</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="messagesCount">0</div>
+                    <div class="stat-label">Сообщений в чате</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="trainingsCount">0</div>
+                    <div class="stat-label">Тренировок пройдено</div>
+                </div>
+            </div>
+            
+            <!-- Chat Card -->
+            <div class="card">
+                <div class="chat-container">
+                    <div class="chat-messages" id="chatMessages">
+                        <!-- Welcome message -->
+                        <div class="message assistant">
+                            <div class="message-avatar">🤖</div>
+                            <div class="message-content">
+                                <div class="message-text">
+                                    <p>Здравствуйте! Я ваш ИИ-ассистент. Я могу помогать вам отвечать на вопросы клиентов на основе загруженной истории переписки.</p>
+                                    <p>Чтобы я мог давать точные ответы, загрузите файлы с историей переписки в разделе "Файлы переписки".</p>
+                                    <p>Чем могу помочь?</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="chat-input-area">
+                        <div class="chat-input-wrapper">
+                            <textarea 
+                                class="chat-input" 
+                                id="chatInput" 
+                                placeholder="Введите ваш вопрос..." 
+                                rows="1"
+                            ></textarea>
+                            <button class="chat-send-btn" id="sendBtn" title="Отправить">
+                                <span>➤</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <script src="js/config.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/dashboard.js"></script>
+</body>
+</html>

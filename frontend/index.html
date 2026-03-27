@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ReplyMan - Вход</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤖</text></svg>">
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-logo">
+                <div class="logo-icon">🤖</div>
+                <h1>ReplyMan</h1>
+                <p>ИИ-ассистент для вашего бизнеса</p>
+            </div>
+            
+            <div id="alertContainer"></div>
+            
+            <!-- Login Form -->
+            <form id="loginForm" class="auth-form">
+                <div class="form-group">
+                    <label class="form-label" for="loginEmail">Email</label>
+                    <input type="email" id="loginEmail" class="form-input" placeholder="your@email.com" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="loginPassword">Пароль</label>
+                    <input type="password" id="loginPassword" class="form-input" placeholder="Введите пароль" required>
+                </div>
+                
+                <button type="submit" class="btn btn-primary" style="width: 100%;">
+                    <span>Войти</span>
+                    <span>→</span>
+                </button>
+            </form>
+            
+            <!-- Register Form (hidden by default) -->
+            <form id="registerForm" class="auth-form hidden">
+                <div class="form-group">
+                    <label class="form-label" for="registerName">Имя</label>
+                    <input type="text" id="registerName" class="form-input" placeholder="Ваше имя">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="registerEmail">Email</label>
+                    <input type="email" id="registerEmail" class="form-input" placeholder="your@email.com" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="registerPassword">Пароль</label>
+                    <input type="password" id="registerPassword" class="form-input" placeholder="Минимум 8 символов" required minlength="8">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="registerPasswordConfirm">Подтвердите пароль</label>
+                    <input type="password" id="registerPasswordConfirm" class="form-input" placeholder="Повторите пароль" required>
+                </div>
+                
+                <button type="submit" class="btn btn-primary" style="width: 100%;">
+                    <span>Зарегистрироваться</span>
+                    <span>→</span>
+                </button>
+            </form>
+            
+            <div class="auth-footer">
+                <p id="authSwitch">
+                    Нет аккаунта? <a href="#" id="showRegister">Зарегистрироваться</a>
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <script src="js/config.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+</body>
+</html>

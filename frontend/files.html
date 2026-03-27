@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ReplyMan - Файлы переписки</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤖</text></svg>">
+</head>
+<body>
+    <button class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
+    
+    <div class="app-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-logo">
+                <div class="logo-icon">🤖</div>
+                <h1>ReplyMan</h1>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" class="nav-item" data-page="chat">
+                    <span>💬</span>
+                    <span>Чат с ИИ</span>
+                </a>
+                <a href="files.html" class="nav-item active" data-page="files">
+                    <span>📁</span>
+                    <span>Файлы переписки</span>
+                </a>
+                <a href="training.html" class="nav-item" data-page="training">
+                    <span>🎓</span>
+                    <span>Тренировка</span>
+                </a>
+                <a href="instructions.html" class="nav-item" data-page="instructions">
+                    <span>⚙️</span>
+                    <span>Инструкции ИИ</span>
+                </a>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <div class="user-avatar" id="userAvatar">U</div>
+                    <div>
+                        <div class="user-name" id="userName">Пользователь</div>
+                        <div class="user-email" id="userEmail">user@email.com</div>
+                    </div>
+                </div>
+                <button class="nav-item" id="logoutBtn" style="margin-top: 10px; color: rgba(255,255,255,0.7);">
+                    <span>🚪</span>
+                    <span>Выйти</span>
+                </button>
+            </div>
+        </aside>
+        
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="page-header">
+                <h2>📁 Файлы переписки</h2>
+                <p>Загрузите историю деловой переписки для обучения ИИ-ассистента</p>
+            </div>
+            
+            <div id="alertContainer"></div>
+            
+            <!-- Upload Card -->
+            <div class="card mb-30">
+                <div class="card-header">
+                    <h3 class="card-title">Загрузить файл</h3>
+                </div>
+                
+                <div class="file-upload-area" id="fileUploadArea">
+                    <div class="file-upload-icon">📤</div>
+                    <div class="file-upload-text">
+                        Перетащите файл сюда или нажмите для выбора
+                    </div>
+                    <div class="file-upload-hint">
+                        Поддерживаемые форматы: TXT, JSON, HTML (макс. 30MB)
+                    </div>
+                    <input type="file" id="fileInput" accept=".txt,.json,.html,.htm" multiple hidden>
+                </div>
+            </div>
+            
+            <!-- Files List Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Загруженные файлы</h3>
+                    <button class="btn btn-secondary btn-sm" id="refreshFiles">
+                        🔄 Обновить
+                    </button>
+                </div>
+                
+                <div id="filesListContainer">
+                    <div class="loading" id="filesLoading">
+                        <div class="spinner"></div>
+                    </div>
+                    
+                    <div class="file-list" id="filesList" style="display: none;"></div>
+                    
+                    <div class="empty-state hidden" id="emptyFiles">
+                        <div class="empty-icon">📭</div>
+                        <div class="empty-title">Нет загруженных файлов</div>
+                        <div class="empty-desc">
+                            Загрузите файлы с историей переписки, чтобы ИИ мог использовать их для ответов на вопросы
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Context Preview -->
+            <div class="card mt-30">
+                <div class="card-header">
+                    <h3 class="card-title">Предпросмотр контекста</h3>
+                    <button class="btn btn-secondary btn-sm" id="loadContext">
+                        📖 Загрузить контекст
+                    </button>
+                </div>
+                
+                <div id="contextContainer">
+                    <div class="empty-state">
+                        <div class="empty-icon">📄</div>
+                        <div class="empty-title">Контекст не загружен</div>
+                        <div class="empty-desc">
+                            Нажмите кнопку выше, чтобы просмотреть содержимое всех загруженных файлов
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <script src="js/config.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/files.js"></script>
+</body>
+</html>

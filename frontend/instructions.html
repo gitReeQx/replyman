@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ReplyMan - Инструкции ИИ</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤖</text></svg>">
+</head>
+<body>
+    <button class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
+    
+    <div class="app-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-logo">
+                <div class="logo-icon">🤖</div>
+                <h1>ReplyMan</h1>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" class="nav-item" data-page="chat">
+                    <span>💬</span>
+                    <span>Чат с ИИ</span>
+                </a>
+                <a href="files.html" class="nav-item" data-page="files">
+                    <span>📁</span>
+                    <span>Файлы переписки</span>
+                </a>
+                <a href="training.html" class="nav-item" data-page="training">
+                    <span>🎓</span>
+                    <span>Тренировка</span>
+                </a>
+                <a href="instructions.html" class="nav-item active" data-page="instructions">
+                    <span>⚙️</span>
+                    <span>Инструкции ИИ</span>
+                </a>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <div class="user-avatar" id="userAvatar">U</div>
+                    <div>
+                        <div class="user-name" id="userName">Пользователь</div>
+                        <div class="user-email" id="userEmail">user@email.com</div>
+                    </div>
+                </div>
+                <button class="nav-item" id="logoutBtn" style="margin-top: 10px; color: rgba(255,255,255,0.7);">
+                    <span>🚪</span>
+                    <span>Выйти</span>
+                </button>
+            </div>
+        </aside>
+        
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="page-header">
+                <h2>⚙️ Инструкции для ИИ</h2>
+                <p>Настройте поведение ИИ-ассистента с помощью дополнительных инструкций</p>
+            </div>
+            
+            <div id="alertContainer"></div>
+            
+            <!-- Instructions Card -->
+            <div class="card mb-30">
+                <div class="card-header">
+                    <h3 class="card-title">Дополнительные инструкции</h3>
+                    <button class="btn btn-secondary btn-sm" id="resetInstructions">
+                        🔄 Сбросить
+                    </button>
+                </div>
+                
+                <p class="text-secondary mb-20">
+                    Укажите дополнительные правила и контекст для ИИ. Эти инструкции будут использоваться 
+                    при генерации ответов в чате и во время тренировок.
+                </p>
+                
+                <div class="instructions-editor">
+                    <textarea 
+                        class="instructions-textarea" 
+                        id="instructionsTextarea"
+                        placeholder="Например:
+
+- Всегда предлагайте скидку 5% при заказе от 10 единиц
+- Упоминайте гарантию 2 года на все изделия
+- Рекомендуйте премиум линию для VIP-клиентов
+- При вопросах о монтаже предлагайте бесплатный замер
+- Отправляйте каталог по запросу клиента"
+                    ></textarea>
+                </div>
+                
+                <div class="flex-between mt-20">
+                    <span class="text-secondary" id="charCounter">0 символов</span>
+                    <button class="btn btn-primary" id="saveInstructions">
+                        💾 Сохранить инструкции
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Tips Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">💡 Советы по инструкциям</h3>
+                </div>
+                
+                <div class="grid-2" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+                    <div>
+                        <h4 style="margin-bottom: 10px;">Что можно указать:</h4>
+                        <ul class="feedback-list">
+                            <li>Специфика вашего бизнеса и продукции</li>
+                            <li>Правила ценообразования и скидок</li>
+                            <li>Гарантийные условия</li>
+                            <li>Особенности работы с клиентами</li>
+                            <li>Тональность общения (формальная/дружелюбная)</li>
+                            <li>Дополнительные услуги и опции</li>
+                        </ul>
+                    </div>
+                    
+                    <div>
+                        <h4 style="margin-bottom: 10px;">Примеры инструкций:</h4>
+                        <div style="background: var(--bg-primary); padding: 15px; border-radius: var(--border-radius-sm); margin-bottom: 10px;">
+                            <strong>Для продаж:</strong>
+                            <p class="text-secondary" style="margin: 5px 0 0;">
+                                "Всегда спрашивайте бюджет клиента перед рекомендацией продукции"
+                            </p>
+                        </div>
+                        <div style="background: var(--bg-primary); padding: 15px; border-radius: var(--border-radius-sm); margin-bottom: 10px;">
+                            <strong>Для поддержки:</strong>
+                            <p class="text-secondary" style="margin: 5px 0 0;">
+                                "При жалобах сначала извинитесь, затем предложите решение"
+                            </p>
+                        </div>
+                        <div style="background: var(--bg-primary); padding: 15px; border-radius: var(--border-radius-sm);">
+                            <strong>Для монтажа:</strong>
+                            <p class="text-secondary" style="margin: 5px 0 0;">
+                                "Уточняйте тип окна и размеры перед рекомендацией способа установки"
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Preview Card -->
+            <div class="card mt-30">
+                <div class="card-header">
+                    <h3 class="card-title">👁️ Предпросмотр системного промпта</h3>
+                    <button class="btn btn-secondary btn-sm" id="previewPrompt">
+                        🔄 Обновить
+                    </button>
+                </div>
+                
+                <div id="promptPreview" style="background: var(--bg-primary); padding: 20px; border-radius: var(--border-radius-sm); white-space: pre-wrap; font-family: monospace; font-size: 0.9rem; max-height: 400px; overflow-y: auto;">
+                    Нажмите "Обновить" для предпросмотра системного промпта с вашими инструкциями
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <script src="js/config.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/instructions.js"></script>
+</body>
+</html>
