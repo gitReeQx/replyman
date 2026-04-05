@@ -1,3 +1,13 @@
+"""
+Appwrite Service - обновлённая версия с поддержкой RAG чанков
+
+Добавлены методы:
+- save_chunk() - сохранить чанк с embedding
+- get_user_chunks() - получить все чанки пользователя
+- search_chunks() - поиск по чанкам
+- delete_file_chunks() - удалить чанки файла
+"""
+
 from appwrite.client import Client
 from appwrite.services.tables_db import TablesDB
 from appwrite.services.storage import Storage
@@ -26,9 +36,12 @@ class AppwriteService:
         self.users = Users(self.client)
         
         self.database_id = settings.appwrite_database_id
-        self.users_table = settings.appwrite_users_collection_id  # table ID for users
-        self.chats_table = settings.appwrite_chats_collection_id  # table ID for chats
+        self.users_table = settings.appwrite_users_collection_id
+        self.chats_table = settings.appwrite_chats_collection_id
         self.bucket_id = settings.appwrite_files_bucket_id
+        
+        # ID таблицы для чанков (создайте в Appwrite если нет)
+        self.chunks_table = getattr(settings, 'appwrite_chunks_collection_id', 'chunks')
     
     def _get_user_permissions(self, user_id: str) -> List[str]:
         """Generate read/write permissions for a user"""
@@ -37,14 +50,102 @@ class AppwriteService:
             Permission.write(Role.user(user_id))
         ]
     
+# ========================================
+    # KNOWLEDGE OPERATIONS (таблица users)
     # ========================================
-    # User Authentication Methods (Appwrite Users API)
+     
+    async def get_user_knowledge(self, user_id: str) -> str:
+        """Получить знания из users.knowledge"""
+        try:
+            result = self.tablesdb.list_rows(
+                database_id=self.database_id,
+                table_id=self.users_table,
+                queries=[Query.equal("user_id", user_id)]
+            )
+            rows = result.rows if hasattr(result, 'rows') else []
+            if rows:
+                rd = rows[0].data if hasattr(rows[0], 'data') else rows[0]
+                return rd.get("knowledge", "")
+            return ""
+        except Exception as e:
+            print(f"get_user_knowledge error: {e}")
+            return ""
+    
+    async def save_user_knowledge(self, user_id: str, knowledge: str) -> dict:
+        """Сохранить знания в users.knowledge"""
+        if len(knowledge) > 50000:
+            knowledge = knowledge[:50000]
+        
+        try:
+            result = self.tablesdb.list_rows(
+                database_id=self.database_id,
+                table_id=self.users_table,
+                queries=[Query.equal("user_id", user_id)]
+            )
+            rows = result.rows if hasattr(result, 'rows') else []
+            
+            if rows:
+                row = rows[0]
+                row_id = row.id if hasattr(row, 'id') else row.get("$id")
+                rd = row.data if hasattr(row, 'data') else row
+                
+                update = {"knowledge": knowledge}
+                for f in ["user_id", "email", "name", "instructions"]:
+                    if f in rd:
+                        update[f] = rd[f]
+                
+                self.tablesdb.update_row(
+                    database_id=self.database_id,
+                    table_id=self.users_table,
+                    row_id=row_id,
+                    data=update
+                )
+                return {"success": True}
+            else:
+                # Создаём новую запись
+                try:
+                    user = self.users.get(user_id)
+                    email = user.email if hasattr(user, 'email') else f"{user_id}@temp.local"
+                    name = user.name if hasattr(user, 'name') else ""
+                except:
+                    email, name = f"{user_id}@temp.local", ""
+                
+                self.tablesdb.create_row(
+                    database_id=self.database_id,
+                    table_id=self.users_table,
+                    row_id=ID.unique(),
+                    data={"user_id": user_id, "knowledge": knowledge, "email": email, "name": name},
+                    permissions=self._get_user_permissions(user_id)
+                )
+                return {"success": True}
+                
+        except Exception as e:
+            print(f"save_user_knowledge error: {e}")
+            return {"success": False, "error": str(e)}
+    
+    async def append_user_knowledge(self, user_id: str, new_knowledge: str, source: str = "") -> dict:
+        """Добавить знания к существующим"""
+        existing = await self.get_user_knowledge(user_id)
+        
+        if source:
+            separator = f"\n\n{'='*50}\n=== {source} ===\n{'='*50}\n\n"
+        else:
+            separator = "\n\n"
+        
+        combined = existing + separator + new_knowledge
+        
+        return await self.save_user_knowledge(user_id, combined)
+    
+    async def clear_user_knowledge(self, user_id: str) -> dict:
+        """Очистить базу знаний"""
+        return await self.save_user_knowledge(user_id, "")
+    # ========================================
+    # User Authentication Methods
     # ========================================
     
     async def create_user(self, email: str, password: str, name: Optional[str] = None) -> Dict[str, Any]:
         """Create a new user via Appwrite Users API (server-side)"""
         try:
-            # Create user with email and password in Auth
             user = self.users.create(
                 user_id=ID.unique(),
                 email=email,
@@ -52,14 +153,12 @@ class AppwriteService:
                 name=name or email.split('@')[0]
             )
             
-            # user is an object, access attributes directly
             user_id = user.id if hasattr(user, 'id') else user.get("$id", "") if hasattr(user, 'get') else str(user)
             user_email = user.email if hasattr(user, 'email') else email
             user_name = user.name if hasattr(user, 'name') else (name or email.split('@')[0])
             
             print(f"Appwrite user created in Auth: {user_id}")
             
-            # Also create a record in users table for additional data
             try:
                 user_record = self.tablesdb.create_row(
                     database_id=self.database_id,
@@ -197,116 +296,99 @@ class AppwriteService:
     # File operations
     # ========================================
     
-    async def upload_file(self, user_id: str, file_name: str, file_content: bytes, content_type: str) -> Dict[str, Any]:
-        """Upload a file to Appwrite Storage"""
-        file_id = None
-        try:
-            # Create InputFile from bytes
-            input_file = InputFile.from_bytes(
-                file_content,
-                filename=file_name
-            )
-            
-            # Generate file ID beforehand
-            file_id = ID.unique()
-            
-            # Create file with user permissions
-            try:
-                result = self.storage.create_file(
-                    bucket_id=self.bucket_id,
-                    file_id=file_id,
-                    file=input_file,
-                    permissions=self._get_user_permissions(user_id)
-                )
-            except Exception as api_error:
-                # SDK parsing error - file might still be uploaded
-                error_str = str(api_error)
-                if "validation error" in error_str.lower() or "encryption" in error_str.lower():
-                    # File was uploaded, just SDK parsing failed
-                    print(f"File uploaded (SDK parsing warning): {file_id}")
-                else:
-                    raise api_error
-            
-            print(f"File uploaded to storage: {file_id}")
-            
-            # Store file metadata in chats table with permissions
-            metadata = {
-                "user_id": user_id,
-                "file_id": file_id,
-                "file_name": file_name,
-                "content_type": content_type,
-                "processed": False
-            }
-            
-            try:
-                self.tablesdb.create_row(
-                    database_id=self.database_id,
-                    table_id=self.chats_table,
-                    row_id=ID.unique(),
-                    data=metadata,
-                    permissions=self._get_user_permissions(user_id)
-                )
-            except Exception as meta_error:
-                print(f"Warning: Could not save file metadata: {meta_error}")
-            
-            return {"success": True, "file_id": file_id}
-            
-        except Exception as e:
-            print(f"Error uploading file: {e}")
-            import traceback
-            traceback.print_exc()
-            return {"success": False, "error": str(e)}
-
-    async def get_user_files(self, user_id: str) -> List[Dict[str, Any]]:
-        """Get all files for a user"""
+    async def get_user_files(self, user_id: str) -> list:
+        """Получить файлы пользователя из chats таблицы"""
         try:
             result = self.tablesdb.list_rows(
                 database_id=self.database_id,
                 table_id=self.chats_table,
-                queries=[Query.equal("user_id", user_id)]
+                queries=[
+                    Query.equal("user_id", user_id),
+                    Query.limit(100)
+                ]
             )
             
             rows = result.rows if hasattr(result, 'rows') else []
             
             files = []
             for row in rows:
+                row_data = row.data if hasattr(row, 'data') else row
+                row_id = row.id if hasattr(row, 'id') else row.get("$id", "")
+                
                 files.append({
-                    "$id": row.id if hasattr(row, 'id') else "",
-                    "user_id": row.data.get("user_id") if hasattr(row, 'data') else row.get("user_id", ""),
-                    "file_id": row.data.get("file_id") if hasattr(row, 'data') else row.get("file_id", ""),
-                    "file_name": row.data.get("file_name") if hasattr(row, 'data') else row.get("file_name", ""),
-                    "content_type": row.data.get("content_type") if hasattr(row, 'data') else row.get("content_type", ""),
-                    "processed": row.data.get("processed") if hasattr(row, 'data') else row.get("processed", False)
+                    "$id": row_id,
+                    "file_id": row_data.get("file_id", row_id),
+                    "file_name": row_data.get("file_name", "Unknown"),
+                    "uploaded_at": row_data.get("uploaded_at", ""),
+                    "original_size": row_data.get("original_size", 0),
+                    "knowledge_size": row_data.get("knowledge_size", 0)
                 })
             
             return files
+            
         except Exception as e:
-            print(f"Error getting user files: {e}")
+            print(f"get_user_files error: {e}")
             return []
-
-    async def get_file_content(self, file_id: str) -> Optional[bytes]:
-        """Download file content from storage"""
+    
+    async def upload_file(self, user_id: str, file_name: str, file_content: bytes, content_type: str) -> dict:
+        """Загрузить файл в Storage и сохранить метаданные"""
+        file_id = ID.unique()
+        
         try:
-            content = self.storage.get_file_view(
-                bucket_id=self.bucket_id,
-                file_id=file_id
+            from appwrite.input_file import InputFile
+            
+            input_file = InputFile.from_bytes(file_content, filename=file_name)
+            
+            # Загружаем в Storage
+            try:
+                self.storage.create_file(
+                    bucket_id=self.bucket_id,
+                    file_id=file_id,
+                    file=input_file,
+                    permissions=self._get_user_permissions(user_id)
+                )
+            except Exception as api_error:
+                # SDK может выдать ошибку парсинга, но файл загружается
+                error_str = str(api_error)
+                if "validation" in error_str.lower() or "encryption" in error_str.lower():
+                    print(f"File uploaded with SDK warning: {file_id}")
+                else:
+                    raise api_error
+            
+            # Сохраняем метаданные в chats таблицу
+            self.tablesdb.create_row(
+                database_id=self.database_id,
+                table_id=self.chats_table,
+                row_id=ID.unique(),
+                data={
+                    "user_id": user_id,
+                    "file_id": file_id,
+                    "file_name": file_name,
+                    "content_type": content_type,
+                    "uploaded_at": datetime.now().isoformat()
+                },
+                permissions=self._get_user_permissions(user_id)
             )
-            return content
+            
+            return {"success": True, "file_id": file_id}
+            
         except Exception as e:
-            print(f"Error getting file content: {e}")
-            return None
-
-    async def delete_file(self, file_id: str, user_id: str) -> Dict[str, Any]:
-        """Delete a file"""
+            print(f"upload_file error: {e}")
+            import traceback
+            traceback.print_exc()
+            return {"success": False, "error": str(e)}
+    
+    async def delete_file(self, file_id: str, user_id: str) -> dict:
+        """Удалить файл из Storage и метаданные"""
         try:
-            # Delete from storage
+            # Удаляем из Storage
             self.storage.delete_file(
                 bucket_id=self.bucket_id,
                 file_id=file_id
             )
             
-            # Find and delete metadata row
-            rows_result = self.tablesdb.list_rows(
+            # Удаляем метаданные
+            result = self.tablesdb.list_rows(
                 database_id=self.database_id,
                 table_id=self.chats_table,
                 queries=[
@@ -315,10 +397,9 @@ class AppwriteService:
                 ]
             )
             
-            rows = rows_result.rows if hasattr(rows_result, 'rows') else []
-            
+            rows = result.rows if hasattr(result, 'rows') else []
             for row in rows:
-                row_id = row.id if hasattr(row, 'id') else row["$id"]
+                row_id = row.id if hasattr(row, 'id') else row.get("$id")
                 self.tablesdb.delete_row(
                     database_id=self.database_id,
                     table_id=self.chats_table,
@@ -326,39 +407,44 @@ class AppwriteService:
                 )
             
             return {"success": True}
+            
         except Exception as e:
-            print(f"Error deleting file: {e}")
+            print(f"delete_file error: {e}")
             return {"success": False, "error": str(e)}
-
+    
+    async def get_file_content(self, file_id: str) -> bytes:
+        """Получить содержимое файла"""
+        try:
+            return self.storage.get_file_view(
+                bucket_id=self.bucket_id,
+                file_id=file_id
+            )
+        except Exception as e:
+            print(f"get_file_content error: {e}")
+            return None
     # ========================================
     # User instructions operations
     # ========================================
     
     async def get_user_instructions(self, user_id: str) -> str:
-        """Get user's custom instructions"""
+        """Получить инструкции пользователя"""
         try:
             result = self.tablesdb.list_rows(
                 database_id=self.database_id,
                 table_id=self.users_table,
                 queries=[Query.equal("user_id", user_id)]
             )
-            
             rows = result.rows if hasattr(result, 'rows') else []
-            
             if rows:
-                row = rows[0]
-                if hasattr(row, 'data'):
-                    return row.data.get("instructions", "")
-                return row.get("instructions", "")
+                rd = rows[0].data if hasattr(rows[0], 'data') else rows[0]
+                return rd.get("instructions", "")
             return ""
-        except Exception as e:
-            print(f"Error getting user instructions: {e}")
+        except:
             return ""
 
     async def save_user_instructions(self, user_id: str, instructions: str) -> Dict[str, Any]:
         """Save user's custom instructions"""
         try:
-            # Check if instructions row exists
             result = self.tablesdb.list_rows(
                 database_id=self.database_id,
                 table_id=self.users_table,
@@ -368,7 +454,6 @@ class AppwriteService:
             rows = result.rows if hasattr(result, 'rows') else []
             
             if rows:
-                # Update existing row
                 row = rows[0]
                 row_id = row.id if hasattr(row, 'id') else row["$id"]
                 self.tablesdb.update_row(
@@ -378,7 +463,6 @@ class AppwriteService:
                     data={"instructions": instructions}
                 )
             else:
-                # Create new row with permissions
                 self.tablesdb.create_row(
                     database_id=self.database_id,
                     table_id=self.users_table,

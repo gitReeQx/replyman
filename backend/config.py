@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     appwrite_users_collection_id: str = "users"
     appwrite_chats_collection_id: str = "chats"
     appwrite_files_bucket_id: str = "chat-files"
+    appwrite_chunks_collection_id: str = "chunks"
     
     # OpenAI Compatible API
     openai_base_url: str = "https://routerai.ru/api/v1"

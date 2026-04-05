@@ -1,111 +1,115 @@
-from fastapi import APIRouter, Cookie
-from typing import Optional, List, Dict
+"""
+Routes для чата - ИСПРАВЛЕННАЯ ВЕРСИЯ
+Контекст берётся из users.knowledge (не из файлов)
+"""
+from fastapi import APIRouter, Cookie, Header, Request
+from typing import Optional, Dict
 from app.models.schemas import ChatRequest, ChatResponse
-from app.services.ai_service import ai_service
 from app.services.appwrite_service import appwrite_service
-from app.services.file_processor import file_processor
+from app.services.ai_service import ai_service
 import uuid
-import os
+import logging
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
-# In-memory session storage (in production use Redis or database)
-chat_sessions: Dict[str, List[Dict[str, str]]] = {}
+# In-memory session storage
+chat_sessions: Dict[str, list] = {}
 
-# Import local file storage from files router
-LOCAL_STORAGE_PATH = "/tmp/replyman_files"
-LOCAL_FILES_DB = {}
+# Sessions from auth module
+try:
+    from app.routes.auth import sessions
+except ImportError:
+    sessions = {}
 
-def get_user_id_from_session(session_token: Optional[str]) -> str:
-    """Get user ID from session or return default"""
+
+def get_user_id(
+    session_token: Optional[str] = None,
+    request: Optional[Request] = None,
+    authorization: Optional[str] = None
+) -> str:
+    """Получить ID пользователя из сессии (cookie или Authorization header)"""
+    token = None
+    # Сначала пробуем Authorization header
+    if authorization and authorization.startswith("Bearer "):
+        token = authorization[7:]
+    # Затем cookie
+    elif session_token:
+        token = session_token
+    # Затем request.cookies (если передан request)
+    elif request:
+        token = request.cookies.get("session_token")
+    
+    if token and token in sessions:
+        return sessions[token].get("user_id", "dev_user")
     return "dev_user"
+
 
 @router.post("/message", response_model=ChatResponse)
 async def send_message(
     request: ChatRequest,
-    session_token: Optional[str] = Cookie(None)
+    session_token: Optional[str] = Cookie(None),
+    authorization: Optional[str] = Header(None),
+    fastapi_request: Request = None  # добавить для возможности получить request
 ):
-    """Send a message to AI assistant"""
+    uid = get_user_id(session_token, fastapi_request, authorization)
+    logger.info(f"=== CHAT from user: {uid} ===")
+    print(f"=== CHAT: use_context={request.use_context}, uid={uid} ===")
     
-    user_id = get_user_id_from_session(session_token)
-    
-    # Get or create session
+    # Получаем или создаём сессию
     session_id = request.session_id or str(uuid.uuid4())
     
     if session_id not in chat_sessions:
         chat_sessions[session_id] = []
     
-    # Add user message to history
+    # Добавляем сообщение пользователя
     chat_sessions[session_id].append({
         "role": "user",
         "content": request.message
     })
     
-    # Build context from uploaded files
-    context = ""
+    # ========== КОНТЕКСТ ИЗ users.knowledge ==========
+    knowledge = ""
     custom_instructions = ""
     
     if request.use_context:
-        context_parts = []
-        
-        # Get local files
-        user_files = LOCAL_FILES_DB.get(user_id, [])
-        for f in user_files:
-            file_path = os.path.join(LOCAL_STORAGE_PATH, f["id"])
-            if os.path.exists(file_path):
-                with open(file_path, "rb") as file:
-                    content = file.read()
-                result = await file_processor.process_file(
-                    content,
-                    f.get("content_type", "text/plain"),
-                    f.get("name", "")
-                )
-                if result.get("success"):
-                    context_parts.append(result.get("content", ""))
-        
-        # Also try Appwrite
         try:
-            files = await appwrite_service.get_user_files(user_id)
-            for f in files:
-                file_id = f.get("file_id")
-                if file_id:
-                    content = await appwrite_service.get_file_content(file_id)
-                    if content:
-                        result = await file_processor.process_file(
-                            content,
-                            f.get("content_type", "text/plain"),
-                            f.get("file_name", "")
-                        )
-                        if result.get("success"):
-                            context_parts.append(result.get("content", ""))
+            knowledge = await appwrite_service.get_user_knowledge(uid)
+            print(f"=== CHAT: knowledge size={len(knowledge)} ===")
+            logger.info(f"Knowledge loaded: {len(knowledge)} chars for user {uid}")
+        except Exception as e:
+            print(f"=== CHAT: error loading knowledge: {e}")
+            logger.warning(f"Could not load knowledge: {e}")
+            knowledge = ""
+        
+        try:
+            custom_instructions = await appwrite_service.get_user_instructions(uid)
         except Exception:
             pass
-        
-        context = "\n\n".join(context_parts)
-        
-        # Get custom instructions
-        try:
-            custom_instructions = await appwrite_service.get_user_instructions(user_id)
-        except Exception:
-            pass
+    else:
+        print("=== CHAT: use_context is False, not loading knowledge ===")
     
-    # Build system prompt
-    system_prompt = ai_service.build_context_prompt(context, custom_instructions)
+    # Строим system prompt
+    system_prompt = build_system_prompt(knowledge, custom_instructions)
+    print(f"=== CHAT: system_prompt length={len(system_prompt)}, includes knowledge? {bool(knowledge)}")
     
-    # Get AI response
+    # Получаем историю сообщений
     messages = chat_sessions[session_id]
     
+    # Отправляем в AI
     response_text = await ai_service.chat_completion(
         messages=messages,
         system_prompt=system_prompt,
         temperature=0.7
     )
     
-    # Add assistant response to history
+    # Добавляем ответ ассистента
     chat_sessions[session_id].append({
         "role": "assistant",
         "content": response_text
     })
+    
+    logger.info(f"Response: {len(response_text)} chars")
     
     return ChatResponse(
         success=True,
@@ -114,9 +118,14 @@ async def send_message(
         session_id=session_id
     )
 
+
+def build_system_prompt(knowledge: str, custom_instructions: str = "") -> str:
+    return ai_service.build_context_prompt(knowledge, custom_instructions)
+
+
 @router.get("/history/{session_id}")
 async def get_chat_history(session_id: str):
-    """Get chat history for a session"""
+    """Получить историю чата"""
     
     if session_id in chat_sessions:
         return {
@@ -129,18 +138,20 @@ async def get_chat_history(session_id: str):
             "message": "Сессия не найдена"
         }
 
+
 @router.delete("/session/{session_id}")
 async def clear_session(session_id: str):
-    """Clear chat session"""
+    """Очистить сессию чата"""
     
     if session_id in chat_sessions:
         del chat_sessions[session_id]
     
     return {"success": True, "message": "Сессия очищена"}
 
+
 @router.post("/new-session")
 async def create_new_session():
-    """Create a new chat session"""
+    """Создать новую сессию чата"""
     
     session_id = str(uuid.uuid4())
     chat_sessions[session_id] = []
