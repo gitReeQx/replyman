@@ -1,5 +1,6 @@
 // ========================================
 // ReplyMan AI Assistant - Files Page Logic
+// Исправленная версия с корректными ID элементов
 // ========================================
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -7,19 +8,10 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function initFilesPage() {
-    // Check authentication
     await checkAuth();
-    
-    // Initialize components
     initSidebar();
     initFileUpload();
-    loadFiles();
-    
-    // Load context button
-    document.getElementById('loadContext').addEventListener('click', loadContext);
-    
-    // Refresh files button
-    document.getElementById('refreshFiles').addEventListener('click', loadFiles);
+    loadStats();
 }
 
 async function checkAuth() {
@@ -67,15 +59,19 @@ function initFileUpload() {
     const uploadArea = document.getElementById('fileUploadArea');
     const fileInput = document.getElementById('fileInput');
     
-    // Click to upload
     uploadArea.addEventListener('click', () => {
-        fileInput.click();
+        if (!uploadArea.classList.contains('disabled')) {
+            fileInput.click();
+        }
     });
     
-    // File selection
-    fileInput.addEventListener('change', handleFileSelect);
+    fileInput.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) {
+            handleFile(e.target.files[0]);
+        }
+        e.target.value = '';
+    });
     
-    // Drag and drop
     uploadArea.addEventListener('dragover', (e) => {
         e.preventDefault();
         uploadArea.classList.add('dragover');
@@ -89,230 +85,239 @@ function initFileUpload() {
     uploadArea.addEventListener('drop', (e) => {
         e.preventDefault();
         uploadArea.classList.remove('dragover');
-        
-        const files = e.dataTransfer.files;
-        handleFiles(files);
+        if (e.dataTransfer.files.length > 0) {
+            handleFile(e.dataTransfer.files[0]);
+        }
     });
+    
+    document.getElementById('refreshStats').addEventListener('click', loadStats);
+    document.getElementById('showKnowledge').addEventListener('click', showKnowledge);
+    document.getElementById('clearKnowledge').addEventListener('click', clearKnowledge);
 }
 
-function handleFileSelect(e) {
-    const files = e.target.files;
-    handleFiles(files);
-    e.target.value = ''; // Reset input
-}
+// ========================================
+// Загрузка файла с прогрессом
+// ========================================
 
-async function handleFiles(files) {
-    for (const file of files) {
-        await uploadFile(file);
-    }
-    loadFiles();
-}
-
-async function uploadFile(file) {
-    // Validate file
+async function handleFile(file) {
     const ext = '.' + file.name.split('.').pop().toLowerCase();
+    const allowed = ['.txt', '.json', '.html', '.htm', '.pdf', '.docx', '.doc'];
     
-    if (!CONFIG.ALLOWED_EXTENSIONS.includes(ext)) {
-        showAlert(`Неподдерживаемый формат файла: ${file.name}`, 'error');
+    if (!allowed.includes(ext)) {
+        showAlert(`Неподдерживаемый формат. Разрешены: ${allowed.join(', ')}`, 'error');
         return;
     }
     
-    if (file.size > CONFIG.MAX_FILE_SIZE) {
-        showAlert(`Файл слишком большой: ${file.name} (макс. 30MB)`, 'error');
+    if (file.size > 30 * 1024 * 1024) {
+        showAlert('Файл слишком большой. Максимум: 30MB', 'error');
         return;
     }
     
-    showAlert(`Загрузка: ${file.name}...`, 'info');
+    const uploadArea = document.getElementById('fileUploadArea');
+    uploadArea.classList.add('disabled');
+    
+    showProgress(0, 'Загрузка файла...', 'Подготовка к отправке');
     
     try {
-        const result = await api.uploadFile(file, (progress) => {
-            // Could show progress here
-        });
+        const result = await uploadWithProgress(file);
         
         if (result.success) {
-            showAlert(`Файл "${file.name}" успешно загружен`, 'success');
+            showResult(result);
+            loadStats(); // обновляем статистику после загрузки
         } else {
-            showAlert(`Ошибка загрузки: ${result.message}`, 'error');
+            showAlert(result.message || 'Ошибка обработки', 'error');
+            hideProgress();
         }
     } catch (error) {
-        showAlert(`Ошибка загрузки файла: ${error.message}`, 'error');
+        console.error('Upload error:', error);
+        showAlert(`Ошибка: ${error.message}`, 'error');
+        hideProgress();
+    } finally {
+        uploadArea.classList.remove('disabled');
     }
 }
 
-async function loadFiles() {
-    const filesLoading = document.getElementById('filesLoading');
-    const filesList = document.getElementById('filesList');
-    const emptyFiles = document.getElementById('emptyFiles');
-    
-    filesLoading.style.display = 'flex';
-    filesList.style.display = 'none';
-    emptyFiles.classList.add('hidden');
-    
-    try {
-        const result = await api.getFiles();
+async function uploadWithProgress(file) {
+    return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        const formData = new FormData();
+        formData.append('file', file);
         
-        filesLoading.style.display = 'none';
+        xhr.upload.addEventListener('progress', (e) => {
+            if (e.lengthComputable) {
+                const percent = Math.round((e.loaded / e.total) * 50);
+                showProgress(percent, 'Загрузка файла...', `Отправлено ${formatSize(e.loaded)} из ${formatSize(e.total)}`);
+            }
+        });
         
-        if (result.success && result.files.length > 0) {
-            filesList.style.display = 'flex';
-            renderFiles(result.files);
-        } else {
-            emptyFiles.classList.remove('hidden');
-        }
+        xhr.addEventListener('load', () => {
+            if (xhr.status === 200) {
+                try {
+                    const result = JSON.parse(xhr.responseText);
+                    if (result.success) {
+                        showProgress(65, 'Оптимизация...', `Сжатие: ${result.compression || 0}%`);
+                        setTimeout(() => {
+                            showProgress(85, 'AI-анализ...', `Извлечено знаний: ${result.knowledge_size || 0} символов`);
+                            setTimeout(() => {
+                                resolve(result);
+                            }, 300);
+                        }, 300);
+                    } else {
+                        resolve(result);
+                    }
+                } catch (e) {
+                    reject(new Error('Ошибка парсинга ответа'));
+                }
+            } else {
+                reject(new Error(`HTTP ${xhr.status}`));
+            }
+        });
         
-        // Update stats
-        const statsFilesCount = parent.document.getElementById('filesCount');
-        if (statsFilesCount) {
-            statsFilesCount.textContent = result.files?.length || 0;
-        }
+        xhr.addEventListener('error', () => reject(new Error('Ошибка сети')));
+        xhr.addEventListener('timeout', () => reject(new Error('Таймаут')));
+        xhr.timeout = 300000;
         
-    } catch (error) {
-        filesLoading.style.display = 'none';
-        emptyFiles.classList.remove('hidden');
-        showAlert('Ошибка загрузки списка файлов', 'error');
-    }
-}
-
-function renderFiles(files) {
-    const filesList = document.getElementById('filesList');
-    filesList.innerHTML = '';
-    
-    files.forEach(file => {
-        const fileItem = document.createElement('div');
-        fileItem.className = 'file-item';
-        
-        const icon = getFileIcon(file.name);
-        const size = formatFileSize(file.size);
-        const date = new Date(file.uploaded_at).toLocaleDateString('ru-RU');
-        
-        fileItem.innerHTML = `
-            <div class="file-icon">${icon}</div>
-            <div class="file-info">
-                <div class="file-name">${file.name}</div>
-                <div class="file-meta">${size} • ${date}</div>
-            </div>
-            <div class="file-actions">
-                <button class="btn btn-secondary btn-sm" onclick="viewFile('${file.id}')" title="Просмотр">
-                    👁️
-                </button>
-                <button class="btn btn-danger btn-sm" onclick="deleteFile('${file.id}')" title="Удалить">
-                    🗑️
-                </button>
-            </div>
-        `;
-        
-        filesList.appendChild(fileItem);
+        const token = localStorage.getItem(CONFIG.SESSION_KEY);
+        xhr.open('POST', `${CONFIG.API_BASE_URL}/files/upload`);
+        if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+        xhr.send(formData);
     });
 }
 
-function getFileIcon(filename) {
-    const ext = filename.split('.').pop().toLowerCase();
-    const icons = {
-        'txt': '📄',
-        'json': '📋',
-        'html': '🌐',
-        'htm': '🌐'
-    };
-    return icons[ext] || '📁';
+function showProgress(percent, stage, detail) {
+    const container = document.getElementById('progressBox');
+    const fill = document.getElementById('progressFill');
+    const pctEl = document.getElementById('progressPct');
+    const textEl = document.getElementById('progressText');
+    const stageName = document.getElementById('stageName');
+    const stageDetail = document.getElementById('stageDetail');
+    
+    if (!container || !fill || !pctEl || !textEl || !stageName || !stageDetail) return;
+    
+    container.classList.add('active');
+    fill.style.width = `${percent}%`;
+    pctEl.textContent = `${percent}%`;
+    
+    if (stage) {
+        stageName.textContent = stage;
+    }
+    if (detail !== undefined) {
+        stageDetail.textContent = detail;
+    }
+    textEl.textContent = stage || '';
 }
 
-function formatFileSize(bytes) {
+function hideProgress() {
+    const container = document.getElementById('progressBox');
+    if (container) {
+        container.classList.remove('active');
+    }
+}
+
+function showResult(result) {
+    const container = document.getElementById('progressBox');
+    if (!container) return;
+    
+    container.innerHTML = `
+        <div class="alert alert-success" style="margin-bottom: 15px;">
+            ✅ Файл успешно обработан!
+        </div>
+        <div class="stats-row">
+            <div class="stat-item">
+                <div class="value">${formatSize(result.original_size || 0)}</div>
+                <div class="label">Исходный размер</div>
+            </div>
+            <div class="stat-item">
+                <div class="value">${result.compression || 0}%</div>
+                <div class="label">Сжатие</div>
+            </div>
+            <div class="stat-item">
+                <div class="value">${result.knowledge_size || 0}</div>
+                <div class="label">Знаний извлечено</div>
+            </div>
+        </div>
+        <button class="btn btn-primary" onclick="this.parentElement.innerHTML=''; loadStats();">
+            Загрузить ещё файл
+        </button>
+    `;
+}
+
+// ========================================
+// Статистика и знания
+// ========================================
+
+async function loadStats() {
+    try {
+        const result = await api.request('/files/stats');
+        if (result.success) {
+            const sizeEl = document.getElementById('knSize');
+            const tokensEl = document.getElementById('knTokens');
+            if (sizeEl) sizeEl.textContent = formatNumber(result.knowledge_size || 0);
+            if (tokensEl) tokensEl.textContent = formatNumber(result.knowledge_tokens || 0);
+        }
+    } catch (error) {
+        console.error('Stats error:', error);
+    }
+}
+
+async function showKnowledge() {
+    const preview = document.getElementById('preview');
+    const content = document.getElementById('previewContent');
+    
+    if (!preview || !content) return;
+    
+    preview.style.display = 'block';
+    content.textContent = 'Загрузка...';
+    
+    try {
+        const result = await api.request('/files/knowledge');
+        if (result.success) {
+            content.textContent = result.knowledge || '(пусто)';
+        } else {
+            content.textContent = 'Ошибка: ' + (result.message || 'Unknown');
+        }
+    } catch (error) {
+        content.textContent = 'Ошибка загрузки: ' + error.message;
+    }
+}
+
+async function clearKnowledge() {
+    if (!confirm('Удалить всю базу знаний? Это действие необратимо.')) return;
+    
+    try {
+        const result = await api.request('/files/knowledge', { method: 'DELETE' });
+        if (result.success) {
+            showAlert('База знаний очищена', 'success');
+            const preview = document.getElementById('preview');
+            if (preview) preview.style.display = 'none';
+            loadStats();
+        } else {
+            showAlert('Ошибка: ' + (result.message || 'Unknown'), 'error');
+        }
+    } catch (error) {
+        showAlert('Ошибка: ' + error.message, 'error');
+    }
+}
+
+// ========================================
+// Вспомогательные функции
+// ========================================
+
+function formatSize(bytes) {
     if (bytes === 0) return '0 B';
     const k = 1024;
     const sizes = ['B', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
 }
 
-async function viewFile(fileId) {
-    try {
-        const result = await api.getFileContent(fileId);
-        
-        if (result.success) {
-            const contextContainer = document.getElementById('contextContainer');
-            contextContainer.innerHTML = `
-                <h4 style="margin-bottom: 15px;">Содержимое файла:</h4>
-                <div style="background: var(--bg-primary); padding: 20px; border-radius: var(--border-radius-sm); white-space: pre-wrap; max-height: 400px; overflow-y: auto;">
-${escapeHtml(result.content)}
-                </div>
-            `;
-            
-            // Scroll to context
-            contextContainer.scrollIntoView({ behavior: 'smooth' });
-        }
-    } catch (error) {
-        showAlert('Ошибка при загрузке содержимого файла', 'error');
-    }
-}
-
-async function deleteFile(fileId) {
-    if (!confirm('Удалить этот файл?')) return;
-    
-    try {
-        const result = await api.deleteFile(fileId);
-        
-        if (result.success) {
-            showAlert('Файл удален', 'success');
-            loadFiles();
-        } else {
-            showAlert('Ошибка удаления файла', 'error');
-        }
-    } catch (error) {
-        showAlert('Ошибка удаления файла', 'error');
-    }
-}
-
-async function loadContext() {
-    const contextContainer = document.getElementById('contextContainer');
-    contextContainer.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
-    
-    try {
-        const result = await api.getContext();
-        
-        if (result.success && result.context) {
-            const preview = result.context.substring(0, 5000);
-            const remaining = result.context.length > 5000 ? `... и ещё ${result.context.length - 5000} символов` : '';
-            
-            contextContainer.innerHTML = `
-                <div class="alert alert-info mb-20">
-                    Всего файлов: ${result.files_count} • Общий объем: ${result.context.length} символов
-                </div>
-                <div style="background: var(--bg-primary); padding: 20px; border-radius: var(--border-radius-sm); white-space: pre-wrap; max-height: 500px; overflow-y: auto;">
-${escapeHtml(preview)}
-${remaining}
-                </div>
-            `;
-        } else {
-            contextContainer.innerHTML = `
-                <div class="empty-state">
-                    <div class="empty-icon">📭</div>
-                    <div class="empty-title">Нет данных</div>
-                    <div class="empty-desc">Загрузите файлы для формирования контекста</div>
-                </div>
-            `;
-        }
-    } catch (error) {
-        contextContainer.innerHTML = `
-            <div class="alert alert-error">
-                Ошибка загрузки контекста
-            </div>
-        `;
-    }
-}
-
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+function formatNumber(num) {
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 }
 
 function showAlert(message, type = '') {
     const container = document.getElementById('alertContainer');
-    
-    if (!message) {
-        container.innerHTML = '';
-        return;
-    }
+    if (!container) return;
     
     const alertClass = type === 'success' ? 'alert-success' : 
                        type === 'error' ? 'alert-error' : 'alert-info';
@@ -324,7 +329,6 @@ function showAlert(message, type = '') {
         </div>
     `;
     
-    // Auto-hide success messages
     if (type === 'success') {
         setTimeout(() => {
             container.innerHTML = '';

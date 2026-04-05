@@ -1,5 +1,6 @@
 // ========================================
 // ReplyMan AI Assistant - Dashboard Logic
+// Исправлено: правильное получение контекста
 // ========================================
 
 let currentSessionId = null;
@@ -10,10 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function initDashboard() {
-    // Check authentication
     await checkAuth();
-    
-    // Initialize components
     initSidebar();
     initChat();
     loadStats();
@@ -23,12 +21,10 @@ async function checkAuth() {
     try {
         const result = await api.getCurrentUser();
         if (result.success && result.user) {
-            // Update user info in sidebar
             document.getElementById('userName').textContent = result.user.name || 'Пользователь';
             document.getElementById('userEmail').textContent = result.user.email;
             document.getElementById('userAvatar').textContent = (result.user.name || result.user.email)[0].toUpperCase();
         } else {
-            // Not authenticated, redirect to login
             window.location.href = 'index.html';
         }
     } catch (error) {
@@ -38,7 +34,6 @@ async function checkAuth() {
 }
 
 function initSidebar() {
-    // Mobile menu toggle
     const mobileMenuBtn = document.getElementById('mobileMenuBtn');
     const sidebar = document.getElementById('sidebar');
     
@@ -46,7 +41,6 @@ function initSidebar() {
         sidebar.classList.toggle('open');
     });
     
-    // Close sidebar when clicking outside on mobile
     document.addEventListener('click', (e) => {
         if (window.innerWidth <= 1024 && 
             !sidebar.contains(e.target) && 
@@ -56,7 +50,6 @@ function initSidebar() {
         }
     });
     
-    // Logout
     document.getElementById('logoutBtn').addEventListener('click', async () => {
         try {
             await api.logout();
@@ -124,6 +117,7 @@ async function sendMessage() {
     showTypingIndicator();
     
     try {
+        // ========== ИСПРАВЛЕНО: Передаём контекст из users.knowledge ==========
         const result = await api.sendMessage(message, currentSessionId, true);
         
         // Remove typing indicator
@@ -135,11 +129,12 @@ async function sendMessage() {
             messageCount++;
             updateStats();
         } else {
-            addMessage('Ошибка при получении ответа. Попробуйте еще раз.', 'assistant');
+            addMessage('Ошибка при получении ответа. Попробуйте ещё раз.', 'assistant');
         }
     } catch (error) {
+        console.error('Send message error:', error);
         hideTypingIndicator();
-        addMessage('Ошибка соединения. Проверьте подключение к интернету.', 'assistant');
+        addMessage('Ошибка соединения. Проверьте подключение.', 'assistant');
     } finally {
         chatInput.disabled = false;
         sendBtn.disabled = false;
@@ -169,7 +164,6 @@ function addMessage(content, role) {
 }
 
 function formatMessage(content) {
-    // Basic markdown-like formatting
     return content
         .replace(/\n/g, '<br>')
         .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
@@ -205,18 +199,19 @@ function hideTypingIndicator() {
 
 async function loadStats() {
     try {
-        // Load files count
-        const filesResult = await api.getFiles();
-        if (filesResult.success) {
-            document.getElementById('filesCount').textContent = filesResult.files.length;
+        // Load knowledge stats
+        const statsResult = await api.request('/files/stats');
+        if (statsResult.success) {
+            document.getElementById('filesCount').textContent = 
+                statsResult.knowledge_size > 0 ? '✓' : '0';
         }
         
-        // Load message count from local storage (simplified)
+        // Load message count
         const savedCount = localStorage.getItem('messageCount') || 0;
         messageCount = parseInt(savedCount);
         document.getElementById('messagesCount').textContent = messageCount;
         
-        // Load trainings count
+        // Trainings count
         const trainingsCount = localStorage.getItem('trainingsCount') || 0;
         document.getElementById('trainingsCount').textContent = trainingsCount;
         

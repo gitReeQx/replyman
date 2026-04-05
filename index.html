@@ -1,0 +1,2642 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ReplyMan — ИИ-ассистент для менеджеров по продажам и поддержке</title>
+    <meta name="description" content="Загрузите историю переписки с клиентами, и ИИ поможет любому менеджеру отвечать так же профессионально, как ваши лучшие сотрудники.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" href="logo_rm.png">
+    <style>
+        /* ==============================
+           CSS Variables — Design System
+           ============================== */
+        :root {
+            --primary: #7c3aed;
+            --primary-light: #a78bfa;
+            --primary-dark: #5b21b6;
+            --secondary: #ec4899;
+            --accent: #06b6d4;
+
+            --gradient-primary: linear-gradient(135deg, #7c3aed 0%, #ec4899 100%);
+            --gradient-secondary: linear-gradient(135deg, #a78bfa 0%, #f472b6 100%);
+            --gradient-dark: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+            --gradient-light: linear-gradient(135deg, #f5f3ff 0%, #fdf2f8 100%);
+
+            --bg-primary: #faf5ff;
+            --bg-secondary: #ffffff;
+            --bg-dark: #1e1b4b;
+
+            --text-primary: #1e1b4b;
+            --text-secondary: #6b7280;
+            --text-light: #f5f3ff;
+
+            --radius-lg: 30px;
+            --radius-md: 15px;
+            --radius-sm: 10px;
+
+            --shadow-sm: 0 2px 10px rgba(124, 58, 237, 0.1);
+            --shadow-md: 0 4px 20px rgba(124, 58, 237, 0.15);
+            --shadow-lg: 0 10px 40px rgba(124, 58, 237, 0.2);
+            --shadow-xl: 0 20px 60px rgba(124, 58, 237, 0.25);
+
+            --transition: all 0.3s ease;
+
+            --container-max: 1200px;
+        }
+
+        /* ==============================
+           Reset & Base
+           ============================== */
+        *, *::before, *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            font-size: 16px;
+            scroll-behavior: smooth;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #ffffff;
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        a {
+            text-decoration: none;
+            color: inherit;
+            transition: var(--transition);
+        }
+
+        img {
+            max-width: 100%;
+            display: block;
+        }
+
+        .container {
+            max-width: var(--container-max);
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        /* ==============================
+           Scrollbar
+           ============================== */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary-light);
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary);
+        }
+
+        /* ==============================
+           Header / Navigation
+           ============================== */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            padding: 16px 0;
+            transition: var(--transition);
+            background: transparent;
+        }
+
+        .header.scrolled {
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            box-shadow: var(--shadow-sm);
+            padding: 12px 0;
+        }
+
+        .header-inner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .logo-icon {
+            width: 38px;
+            height: 38px;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .logo-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center;
+        }
+
+        .logo-text {
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .logo-beta {
+            font-size: 0.6rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--secondary);
+            background: rgba(236, 72, 153, 0.1);
+            padding: 2px 8px;
+            border-radius: 50px;
+            vertical-align: middle;
+            margin-left: 4px;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 32px;
+            list-style: none;
+        }
+
+        .nav-links a {
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            transition: var(--transition);
+            position: relative;
+        }
+
+        .nav-links a:hover {
+            color: var(--primary);
+        }
+
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--gradient-primary);
+            border-radius: 2px;
+            transition: width 0.3s ease;
+        }
+
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 24px;
+            border-radius: var(--radius-md);
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: var(--transition);
+            font-family: inherit;
+            white-space: nowrap;
+        }
+
+        .btn-primary {
+            background: var(--gradient-primary);
+            color: #ffffff;
+            box-shadow: var(--shadow-sm);
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+        }
+
+        .btn-primary span,
+        .btn-primary {
+            color: #ffffff !important;
+            -webkit-text-fill-color: #ffffff !important;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--primary);
+            border: 2px solid var(--primary);
+        }
+
+        .btn-outline:hover {
+            background: var(--primary);
+            color: #fff;
+        }
+
+        .btn-lg {
+            padding: 16px 32px;
+            font-size: 1.05rem;
+            border-radius: var(--radius-md);
+        }
+
+        .btn-sm {
+            padding: 10px 20px;
+            font-size: 0.9rem;
+        }
+
+        .header-cta .btn {
+            padding: 10px 24px;
+        }
+
+        /* Mobile menu */
+        .mobile-toggle {
+            display: none;
+            flex-direction: column;
+            gap: 5px;
+            cursor: pointer;
+            padding: 8px;
+            border: none;
+            background: none;
+            position: fixed;
+            top: 16px;
+            right: 24px;
+            z-index: 10001;
+        }
+
+        .mobile-toggle span {
+            display: block;
+            width: 24px;
+            height: 2px;
+            background: var(--text-primary);
+            border-radius: 2px;
+            transition: var(--transition);
+        }
+
+        .mobile-toggle.active span:nth-child(1) {
+            transform: rotate(45deg) translate(5px, 5px);
+        }
+        .mobile-toggle.active span:nth-child(2) {
+            opacity: 0;
+        }
+        .mobile-toggle.active span:nth-child(3) {
+            transform: rotate(-45deg) translate(5px, -5px);
+        }
+
+        /* Hide mobile-only elements on desktop by default */
+        #mobileNav,
+        .mobile-toggle {
+            display: none !important;
+        }
+
+        /* ==============================
+           Hero Section
+           ============================== */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+            padding: 120px 0 80px;
+            background: var(--gradient-light);
+        }
+
+        .hero-bg {
+            position: absolute;
+            inset: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .hero-bg .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.3;
+        }
+
+        .hero-bg .orb-1 {
+            width: 500px;
+            height: 500px;
+            background: var(--primary-light);
+            top: -150px;
+            right: -100px;
+            animation: orbFloat 8s ease-in-out infinite;
+        }
+
+        .hero-bg .orb-2 {
+            width: 400px;
+            height: 400px;
+            background: #f9a8d4;
+            bottom: -100px;
+            left: -100px;
+            animation: orbFloat 10s ease-in-out infinite reverse;
+        }
+
+        .hero-bg .orb-3 {
+            width: 300px;
+            height: 300px;
+            background: #67e8f9;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            animation: orbFloat 12s ease-in-out infinite;
+        }
+
+        @keyframes orbFloat {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(30px, -20px) scale(1.05); }
+            66% { transform: translate(-20px, 20px) scale(0.95); }
+        }
+
+        /* Floating chat bubbles */
+        .floating-elements {
+            position: absolute;
+            inset: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .float-bubble {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(8px);
+            border-radius: var(--radius-md);
+            padding: 12px 16px;
+            box-shadow: 0 4px 20px rgba(124, 58, 237, 0.1);
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .float-bubble .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .float-bubble:nth-child(1) {
+            top: 15%;
+            left: 5%;
+            animation: floatUp 6s ease-in-out infinite;
+        }
+        .float-bubble:nth-child(1) .dot { background: var(--primary); }
+
+        .float-bubble:nth-child(2) {
+            top: 25%;
+            right: 8%;
+            animation: floatUp 7s ease-in-out infinite 1s;
+        }
+        .float-bubble:nth-child(2) .dot { background: var(--secondary); }
+
+        .float-bubble:nth-child(3) {
+            bottom: 30%;
+            left: 8%;
+            animation: floatUp 8s ease-in-out infinite 2s;
+        }
+        .float-bubble:nth-child(3) .dot { background: var(--accent); }
+
+        .float-bubble:nth-child(4) {
+            bottom: 20%;
+            right: 5%;
+            animation: floatUp 9s ease-in-out infinite 0.5s;
+        }
+        .float-bubble:nth-child(4) .dot { background: #10b981; }
+
+        .float-bubble:nth-child(5) {
+            top: 55%;
+            left: 3%;
+            animation: floatUp 7.5s ease-in-out infinite 1.5s;
+        }
+        .float-bubble:nth-child(5) .dot { background: #f59e0b; }
+
+        @keyframes floatUp {
+            0%, 100% { transform: translateY(0); opacity: 0.7; }
+            50% { transform: translateY(-15px); opacity: 1; }
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 2;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 60px;
+            align-items: center;
+        }
+
+        .hero-text {
+            max-width: 600px;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(124, 58, 237, 0.08);
+            border: 1px solid rgba(124, 58, 237, 0.15);
+            border-radius: 50px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--primary);
+            margin-bottom: 24px;
+        }
+
+        .hero-badge .badge-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--primary);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.8); }
+        }
+
+        .hero h1 {
+            font-size: 3.2rem;
+            font-weight: 800;
+            line-height: 1.15;
+            margin-bottom: 24px;
+            color: var(--text-primary);
+            letter-spacing: -0.02em;
+        }
+
+        .hero h1 .gradient-text {
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-subtitle {
+            font-size: 1.15rem;
+            line-height: 1.7;
+            color: var(--text-secondary);
+            margin-bottom: 36px;
+            max-width: 520px;
+        }
+
+        .hero-actions {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        /* Hero illustration — animated chat interface */
+        .hero-illustration {
+            position: relative;
+            perspective: 800px;
+        }
+
+        .chat-mockup {
+            background: #ffffff;
+            border-radius: var(--radius-lg);
+            padding: 28px;
+            box-shadow: var(--shadow-xl);
+            transform: rotateY(-5deg) rotateX(2deg);
+            transition: transform 0.6s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .chat-mockup::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--gradient-primary);
+        }
+
+        .chat-mockup:hover {
+            transform: rotateY(0deg) rotateX(0deg);
+        }
+
+        .mockup-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid rgba(124, 58, 237, 0.08);
+        }
+
+        .mockup-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            overflow: hidden;
+        }
+
+        .mockup-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .ai-icon {
+            width: 14px;
+            height: 14px;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 4px;
+            border-radius: 50%;
+        }
+
+        .mockup-name {
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: var(--text-primary);
+        }
+
+        .mockup-status {
+            font-size: 0.8rem;
+            color: #10b981;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .mockup-status::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            background: #10b981;
+            border-radius: 50%;
+        }
+
+        .mockup-messages {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .mockup-msg {
+            max-width: 85%;
+            padding: 14px 18px;
+            border-radius: var(--radius-md);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            opacity: 0;
+            animation: msgAppear 0.5s ease forwards;
+        }
+
+        .mockup-msg:nth-child(1) { animation-delay: 0.5s; }
+        .mockup-msg:nth-child(2) { animation-delay: 1.5s; }
+        .mockup-msg:nth-child(3) { animation-delay: 2.5s; }
+
+        @keyframes msgAppear {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .mockup-msg.user-msg {
+            align-self: flex-end;
+            background: var(--gradient-primary);
+            color: #fff;
+            border-bottom-right-radius: 4px;
+        }
+
+        .mockup-msg.ai-msg {
+            align-self: flex-start;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            border-bottom-left-radius: 4px;
+        }
+
+        .mockup-msg.ai-msg .ai-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .mockup-typing {
+            display: flex;
+            gap: 4px;
+            padding: 14px 18px;
+            background: var(--bg-primary);
+            border-radius: var(--radius-md);
+            border-bottom-left-radius: 4px;
+            align-self: flex-start;
+            width: fit-content;
+            opacity: 0;
+            animation: msgAppear 0.5s ease forwards;
+            animation-delay: 2s;
+        }
+
+        .mockup-typing .typing-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--primary-light);
+            border-radius: 50%;
+            animation: typingBounce 1.4s infinite ease-in-out;
+        }
+
+        .mockup-typing .typing-dot:nth-child(1) { animation-delay: 0s; }
+        .mockup-typing .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .mockup-typing .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes typingBounce {
+            0%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-8px); }
+        }
+
+        /* ==============================
+           Sections Common
+           ============================== */
+        .section {
+            padding: 100px 0;
+        }
+
+        .section-header {
+            text-align: center;
+            max-width: 640px;
+            margin: 0 auto 60px;
+        }
+
+        .section-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--primary);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 16px;
+        }
+
+        .section-label::before,
+        .section-label::after {
+            content: '';
+            width: 24px;
+            height: 2px;
+            background: var(--gradient-primary);
+            border-radius: 2px;
+        }
+
+        .section-title {
+            font-size: 2.4rem;
+            font-weight: 700;
+            line-height: 1.2;
+            margin-bottom: 16px;
+            color: var(--text-primary);
+            letter-spacing: -0.01em;
+        }
+
+        .section-desc {
+            font-size: 1.05rem;
+            color: var(--text-secondary);
+            line-height: 1.7;
+        }
+
+        /* ==============================
+           How It Works — Animated Steps
+           ============================== */
+        .how-it-works {
+            background: var(--bg-primary);
+        }
+
+        .steps-container {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            position: relative;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .step {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 40px;
+            align-items: start;
+            position: relative;
+            padding-bottom: 0;
+        }
+
+        /* Connecting line */
+        .step-line {
+            position: absolute;
+            left: 35px;
+            top: 72px;
+            bottom: -28px;
+            width: 2px;
+            background: linear-gradient(to bottom, var(--primary-light), rgba(167, 139, 250, 0.2));
+            z-index: 0;
+        }
+
+        .step:last-child .step-line {
+            display: none;
+        }
+
+        .step-number {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            background: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+            box-shadow: var(--shadow-md);
+            position: relative;
+            z-index: 2;
+            flex-shrink: 0;
+            transition: var(--transition);
+        }
+
+        .step.active .step-number {
+            background: var(--gradient-primary);
+            color: #fff;
+            transform: scale(1.1);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .step-content {
+            padding: 8px 0 48px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .step-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+
+        .step-desc {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 16px;
+        }
+
+        /* Animation containers */
+        .step-animation {
+            background: #ffffff;
+            border-radius: var(--radius-md);
+            padding: 24px;
+            box-shadow: var(--shadow-sm);
+            overflow: hidden;
+            position: relative;
+            min-height: 160px;
+        }
+
+        /* Step 1: File Upload Animation */
+        .upload-animation {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 24px;
+            height: 120px;
+            position: relative;
+        }
+
+        .upload-file {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+            opacity: 0;
+            transform: translateX(-80px);
+        }
+
+        .upload-file svg {
+            width: 48px;
+            height: 48px;
+        }
+
+        .step.active .upload-file {
+            animation: fileSlideIn 2s ease-in-out forwards;
+        }
+
+        @keyframes fileSlideIn {
+            0% { opacity: 0; transform: translateX(-80px); }
+            40% { opacity: 1; transform: translateX(0); }
+            60% { opacity: 1; transform: translateX(0) scale(1.05); }
+            80% { opacity: 1; transform: translateX(40px) scale(0.9); }
+            100% { opacity: 0.5; transform: translateX(40px) scale(0.9); }
+        }
+
+        .upload-zone {
+            width: 180px;
+            height: 100px;
+            border: 3px dashed var(--primary-light);
+            border-radius: var(--radius-md);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: all 0.5s ease;
+            position: relative;
+        }
+
+        .upload-zone svg {
+            width: 32px;
+            height: 32px;
+            color: var(--primary-light);
+            transition: var(--transition);
+        }
+
+        .upload-zone span {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .step.active .upload-zone {
+            animation: zoneGlow 2s ease-in-out forwards;
+        }
+
+        @keyframes zoneGlow {
+            0%, 30% { border-color: var(--primary-light); background: transparent; }
+            50% { border-color: var(--primary); background: rgba(124, 58, 237, 0.05); box-shadow: 0 0 30px rgba(124, 58, 237, 0.15); }
+            80%, 100% { border-color: var(--primary-light); background: transparent; box-shadow: none; }
+        }
+
+        .step.active .upload-zone svg {
+            animation: uploadIconBounce 2s ease-in-out forwards;
+        }
+
+        @keyframes uploadIconBounce {
+            0%, 30% { transform: translateY(0); color: var(--primary-light); }
+            50% { transform: translateY(-6px); color: var(--primary); }
+            80%, 100% { transform: translateY(0); color: var(--primary-light); }
+        }
+
+        .format-badges {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 12px;
+            opacity: 0;
+        }
+
+        .step.active .format-badges {
+            animation: fadeUp 0.6s ease forwards;
+            animation-delay: 1s;
+        }
+
+        .format-badge {
+            padding: 4px 12px;
+            background: var(--gradient-primary);
+            color: #fff;
+            border-radius: 50px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.03em;
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Step 2: Processing Animation */
+        .processing-animation {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 140px;
+            gap: 16px;
+        }
+
+        .gears-container {
+            position: relative;
+            width: 100px;
+            height: 100px;
+        }
+
+        .gear {
+            position: absolute;
+            opacity: 0;
+        }
+
+        .gear-big {
+            top: 5px;
+            left: 10px;
+            width: 60px;
+            height: 60px;
+        }
+
+        .gear-small {
+            bottom: 5px;
+            right: 5px;
+            width: 40px;
+            height: 40px;
+        }
+
+        .step.active .gear-big {
+            opacity: 1;
+            animation: gearSpin 3s linear infinite;
+            animation-delay: 0.3s;
+        }
+
+        .step.active .gear-small {
+            opacity: 1;
+            animation: gearSpinReverse 2s linear infinite;
+            animation-delay: 0.3s;
+        }
+
+        @keyframes gearSpin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes gearSpinReverse {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(-360deg); }
+        }
+
+        .processing-particles {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+        }
+
+        .particle {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            opacity: 0;
+        }
+
+        .particle:nth-child(1) { background: var(--primary); }
+        .particle:nth-child(2) { background: var(--secondary); }
+        .particle:nth-child(3) { background: var(--accent); }
+        .particle:nth-child(4) { background: #10b981; }
+        .particle:nth-child(5) { background: #f59e0b; }
+
+        .step.active .particle {
+            animation: particleFlow 2s ease-in-out infinite;
+        }
+        .step.active .particle:nth-child(1) { animation-delay: 0s; }
+        .step.active .particle:nth-child(2) { animation-delay: 0.15s; }
+        .step.active .particle:nth-child(3) { animation-delay: 0.3s; }
+        .step.active .particle:nth-child(4) { animation-delay: 0.45s; }
+        .step.active .particle:nth-child(5) { animation-delay: 0.6s; }
+
+        @keyframes particleFlow {
+            0% { opacity: 0; transform: translateX(-10px) scale(0.5); }
+            30% { opacity: 1; transform: translateX(0) scale(1); }
+            70% { opacity: 1; transform: translateX(10px) scale(1); }
+            100% { opacity: 0; transform: translateX(20px) scale(0.5); }
+        }
+
+        .processing-bar {
+            width: 200px;
+            height: 6px;
+            background: rgba(124, 58, 237, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+            opacity: 0;
+        }
+
+        .step.active .processing-bar {
+            opacity: 1;
+            animation: fadeUp 0.4s ease forwards;
+            animation-delay: 0.2s;
+        }
+
+        .processing-bar-fill {
+            height: 100%;
+            width: 0;
+            background: var(--gradient-primary);
+            border-radius: 3px;
+        }
+
+        .step.active .processing-bar-fill {
+            animation: progressFill 2.5s ease-in-out infinite;
+        }
+
+        @keyframes progressFill {
+            0% { width: 0; }
+            50% { width: 80%; }
+            80% { width: 95%; }
+            100% { width: 100%; }
+        }
+
+        /* Step 3: Chat Answer Animation */
+        .answer-animation {
+            padding: 16px 20px;
+        }
+
+        .answer-chat-user {
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+            margin-bottom: 16px;
+            opacity: 0;
+        }
+
+        .step.active .answer-chat-user {
+            animation: fadeUp 0.5s ease forwards;
+            animation-delay: 0.2s;
+        }
+
+        .answer-avatar-user {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--gradient-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            flex-shrink: 0;
+        }
+
+        .answer-bubble-user {
+            background: var(--gradient-primary);
+            color: #fff;
+            padding: 10px 16px;
+            border-radius: var(--radius-md);
+            border-bottom-right-radius: 4px;
+            font-size: 0.85rem;
+            max-width: 280px;
+        }
+
+        .answer-chat-ai {
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+            opacity: 0;
+        }
+
+        .step.active .answer-chat-ai {
+            animation: fadeUp 0.5s ease forwards;
+            animation-delay: 0.8s;
+        }
+
+        .answer-avatar-ai {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+
+        .answer-avatar-ai img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .answer-bubble-ai {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            padding: 10px 16px;
+            border-radius: var(--radius-md);
+            border-bottom-left-radius: 4px;
+            font-size: 0.85rem;
+            max-width: 320px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .answer-bubble-ai .ai-tag {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .typing-cursor {
+            display: inline-block;
+            width: 2px;
+            height: 14px;
+            background: var(--primary);
+            margin-left: 2px;
+            vertical-align: middle;
+            opacity: 0;
+        }
+
+        .step.active .typing-cursor {
+            animation: cursorBlink 1s step-end infinite;
+            animation-delay: 1.5s;
+        }
+
+        @keyframes cursorBlink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        .answer-typing-indicator {
+            display: flex;
+            gap: 4px;
+            padding: 10px 16px;
+            background: var(--bg-primary);
+            border-radius: var(--radius-md);
+            border-bottom-left-radius: 4px;
+            width: fit-content;
+            opacity: 0;
+        }
+
+        .step.active .answer-typing-indicator {
+            animation: fadeUp 0.3s ease forwards;
+            animation-delay: 0.5s;
+        }
+
+        .answer-typing-indicator .t-dot {
+            width: 6px;
+            height: 6px;
+            background: var(--primary-light);
+            border-radius: 50%;
+            animation: typingBounce 1.4s infinite ease-in-out;
+        }
+        .answer-typing-indicator .t-dot:nth-child(1) { animation-delay: 0s; }
+        .answer-typing-indicator .t-dot:nth-child(2) { animation-delay: 0.2s; }
+        .answer-typing-indicator .t-dot:nth-child(3) { animation-delay: 0.4s; }
+
+        /* ==============================
+           Who Is It For
+           ============================== */
+        .who-is-for {
+            background: #ffffff;
+        }
+
+        .for-cards {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+        }
+
+        .for-card {
+            background: var(--bg-primary);
+            border-radius: var(--radius-lg);
+            padding: 36px 28px;
+            transition: var(--transition);
+            border: 2px solid transparent;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .for-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--gradient-primary);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .for-card:hover {
+            border-color: var(--primary-light);
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .for-card:hover::before {
+            opacity: 1;
+        }
+
+        .for-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.6rem;
+            margin-bottom: 20px;
+            background: rgba(124, 58, 237, 0.08);
+        }
+
+        .for-card:nth-child(1) .for-icon { background: rgba(124, 58, 237, 0.08); }
+        .for-card:nth-child(2) .for-icon { background: rgba(236, 72, 153, 0.08); }
+        .for-card:nth-child(3) .for-icon { background: rgba(6, 182, 212, 0.08); }
+
+        .for-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: var(--text-primary);
+        }
+
+        .for-desc {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        /* ==============================
+           Features
+           ============================== */
+        .features {
+            background: var(--bg-primary);
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 24px;
+        }
+
+        .feature-card {
+            background: #ffffff;
+            border-radius: var(--radius-lg);
+            padding: 32px 28px;
+            transition: var(--transition);
+            border: 2px solid transparent;
+            position: relative;
+        }
+
+        .feature-card:hover {
+            border-color: var(--primary-light);
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .feature-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 18px;
+            background: var(--bg-primary);
+        }
+
+        .feature-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .feature-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 3px 10px;
+            background: var(--gradient-primary);
+            color: #fff;
+            border-radius: 50px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+
+        .feature-desc {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        /* ==============================
+           Pricing
+           ============================== */
+        .pricing {
+            background: #ffffff;
+        }
+
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 28px;
+            max-width: 840px;
+            margin: 0 auto;
+            align-items: start;
+        }
+
+        .pricing-card {
+            background: #ffffff;
+            border-radius: var(--radius-lg);
+            padding: 40px 32px;
+            transition: var(--transition);
+            border: 2px solid rgba(124, 58, 237, 0.1);
+            position: relative;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .pricing-card:hover {
+            box-shadow: var(--shadow-md);
+        }
+
+        .pricing-card.featured {
+            border-color: var(--primary);
+            box-shadow: var(--shadow-lg);
+            transform: scale(1.04);
+        }
+
+        .pricing-card.featured:hover {
+            transform: scale(1.04) translateY(-4px);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .pricing-recommend {
+            position: absolute;
+            top: -14px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 6px 20px;
+            background: var(--gradient-primary);
+            color: #fff;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .pricing-name {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+
+        .pricing-desc {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+        }
+
+        .pricing-price {
+            display: flex;
+            align-items: baseline;
+            gap: 4px;
+            margin-bottom: 28px;
+        }
+
+        .pricing-amount {
+            font-size: 2.6rem;
+            font-weight: 800;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1;
+        }
+
+        .pricing-period {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .pricing-features {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 32px;
+        }
+
+        .pricing-features li {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            font-size: 0.9rem;
+            color: var(--text-primary);
+            line-height: 1.4;
+        }
+
+        .pricing-features li .check {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: rgba(124, 58, 237, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+
+        .pricing-features li .check svg {
+            width: 12px;
+            height: 12px;
+            color: var(--primary);
+        }
+
+        .pricing-card .btn {
+            width: 100%;
+            justify-content: center;
+        }
+
+        /* ==============================
+           Footer
+           ============================== */
+        .footer {
+            background: var(--gradient-dark);
+            color: var(--text-light);
+            padding: 60px 0 32px;
+        }
+
+        .footer-grid {
+            display: grid;
+            grid-template-columns: 1.5fr 1fr 1fr;
+            gap: 48px;
+            margin-bottom: 40px;
+        }
+
+        .footer-brand .logo {
+            margin-bottom: 16px;
+        }
+
+        .footer-brand .logo-text {
+            background: var(--gradient-secondary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .footer-about {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.6);
+            line-height: 1.7;
+            max-width: 320px;
+        }
+
+        .footer-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #fff;
+        }
+
+        .footer-links {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .footer-links a {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.6);
+            transition: var(--transition);
+        }
+
+        .footer-links a:hover {
+            color: #fff;
+        }
+
+        .footer-bottom {
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding-top: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .footer-legal {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.4);
+            line-height: 1.6;
+        }
+
+        .footer-copyright {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        /* ==============================
+           Responsive
+           ============================== */
+        @media (max-width: 1024px) {
+            .hero-content {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+
+            .hero-text {
+                max-width: 100%;
+                margin: 0 auto;
+            }
+
+            .hero-subtitle {
+                max-width: 100%;
+            }
+
+            .hero-actions {
+                justify-content: center;
+            }
+
+            .hero-illustration {
+                max-width: 480px;
+                margin: 0 auto;
+            }
+
+            .for-cards {
+                grid-template-columns: 1fr;
+                max-width: 480px;
+                margin: 0 auto;
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+                max-width: 480px;
+                margin: 0 auto;
+            }
+
+            /* Mobile nav: separate full-screen overlay outside header */
+            .desktop-nav {
+                display: none;
+            }
+            #mobileNav {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: #ffffff;
+                align-items: center;
+                justify-content: center;
+                padding: 0;
+                z-index: 9999;
+            }
+
+            #mobileNav.open {
+                display: flex !important;
+            }
+
+            #mobileNav .nav-links {
+                flex-direction: column;
+                align-items: center;
+                gap: 32px;
+            }
+
+            #mobileNav .nav-links a {
+                font-size: 1.3rem;
+            }
+
+            .mobile-toggle {
+                display: flex !important;
+            }
+
+            .pricing-grid {
+                grid-template-columns: 1fr;
+                max-width: 480px;
+                margin: 0 auto;
+            }
+
+            .pricing-card.featured {
+                transform: none;
+            }
+
+            .pricing-card.featured:hover {
+                transform: translateY(-4px);
+            }
+
+            .footer-grid {
+                grid-template-columns: 1fr;
+                gap: 32px;
+            }
+
+            .footer-bottom {
+                flex-direction: column;
+                text-align: center;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .hero {
+                padding: 100px 0 60px;
+                min-height: auto;
+            }
+
+            .hero h1 {
+                font-size: 2.2rem;
+            }
+
+            .hero-subtitle {
+                font-size: 1rem;
+            }
+
+            .section {
+                padding: 72px 0;
+            }
+
+            .section-title {
+                font-size: 1.8rem;
+            }
+
+            .section-header {
+                margin-bottom: 40px;
+            }
+
+            .step {
+                grid-template-columns: 56px 1fr;
+                gap: 20px;
+            }
+
+            .step-number {
+                width: 56px;
+                height: 56px;
+                font-size: 1.2rem;
+            }
+
+            .step-line {
+                left: 27px;
+                z-index: 0;
+            }
+
+            .step-content {
+                padding: 4px 0 40px 0;
+                position: relative;
+                z-index: 1;
+            }
+
+            .upload-animation {
+                gap: 16px;
+            }
+
+            .upload-zone {
+                width: 140px;
+                height: 80px;
+            }
+
+            .answer-bubble-user,
+            .answer-bubble-ai {
+                max-width: 220px;
+            }
+
+            .pricing-card {
+                padding: 32px 24px;
+            }
+
+            .pricing-amount {
+                font-size: 2.2rem;
+            }
+
+            .floating-elements {
+                display: none;
+            }
+        }
+
+        @media (max-width: 480px) {
+            html {
+                font-size: 14px;
+            }
+
+            .container {
+                padding: 0 16px;
+            }
+
+            .hero h1 {
+                font-size: 1.9rem;
+            }
+
+            .hero-actions {
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .hero-actions .btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .chat-mockup {
+                padding: 20px;
+                transform: none;
+            }
+
+            .chat-mockup:hover {
+                transform: none;
+            }
+
+            .step-animation {
+                padding: 16px;
+                min-height: 130px;
+            }
+
+            .feature-card {
+                padding: 24px 20px;
+            }
+
+            .pricing-card {
+                padding: 28px 20px;
+            }
+
+            .logo {
+                font-size: 1.2rem;
+            }
+
+            .logo-icon {
+                width: 36px;
+                height: 36px;
+                font-size: 1.1rem;
+            }
+        }
+
+        /* ==============================
+           Scroll reveal animations
+           ============================== */
+        .reveal {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+
+        .reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .reveal-delay-1 { transition-delay: 0.1s; }
+        .reveal-delay-2 { transition-delay: 0.2s; }
+        .reveal-delay-3 { transition-delay: 0.3s; }
+        .reveal-delay-4 { transition-delay: 0.4s; }
+
+        /* ==============================
+           Modal
+           ============================== */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 99999;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 40px 16px;
+            overflow-y: auto;
+        }
+
+        .modal-overlay.open {
+            display: flex;
+        }
+
+        .modal-box {
+            background: #ffffff;
+            border-radius: var(--radius-lg);
+            max-width: 800px;
+            width: 100%;
+            padding: 40px;
+            position: relative;
+            margin: 20px 0;
+            box-shadow: var(--shadow-xl);
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 16px;
+            right: 20px;
+            width: 36px;
+            height: 36px;
+            border: none;
+            background: var(--bg-primary);
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            transition: var(--transition);
+        }
+
+        .modal-close:hover {
+            background: var(--primary-light);
+            color: #fff;
+        }
+
+        .modal-box h2 {
+            font-size: 1.6rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+
+        .modal-box .modal-subtitle {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 24px;
+        }
+
+        .modal-box h3 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin: 24px 0 10px;
+            color: var(--text-primary);
+        }
+
+        .modal-box h3:first-of-type {
+            margin-top: 0;
+        }
+
+        .modal-box p {
+            font-size: 0.9rem;
+            color: #444;
+            line-height: 1.7;
+            margin-bottom: 12px;
+        }
+
+        .modal-box ul,
+        .modal-box ol {
+            font-size: 0.9rem;
+            color: #444;
+            line-height: 1.7;
+            margin: 0 0 12px 20px;
+        }
+
+        .modal-box li {
+            margin-bottom: 4px;
+        }
+
+        .modal-box strong {
+            color: var(--text-primary);
+        }
+
+        @media (max-width: 768px) {
+            .modal-box {
+                padding: 24px 20px;
+            }
+            .modal-box h2 {
+                font-size: 1.3rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ================================
+         Header
+         ================================ -->
+    <header class="header" id="header">
+        <div class="container header-inner">
+            <a href="/" class="logo">
+                <div class="logo-icon"><img src="logo_rm.png" alt="ReplyMan"></div>
+                <span class="logo-text">ReplyMan</span><span class="logo-beta">beta</span>
+            </a>
+
+            <nav class="desktop-nav">
+                <ul class="nav-links">
+                    <li><a href="#features">Возможности</a></li>
+                    <li><a href="#how-it-works">Как это работает</a></li>
+                    <li><a href="#pricing">Тарифы</a></li>
+                    <li>
+                        <a href="/lk/index.html" class="btn btn-primary btn-sm">Войти</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Mobile toggle + nav overlay — outside header to avoid stacking context -->
+    <button class="mobile-toggle" id="mobileToggle" aria-label="Меню">
+        <span></span>
+        <span></span>
+        <span></span>
+    </button>
+    <nav id="mobileNav">
+        <ul class="nav-links" id="navLinks">
+            <li><a href="#features" onclick="closeNav()">Возможности</a></li>
+            <li><a href="#how-it-works" onclick="closeNav()">Как это работает</a></li>
+            <li><a href="#pricing" onclick="closeNav()">Тарифы</a></li>
+            <li>
+                <a href="/lk/index.html" class="btn btn-primary btn-sm">Войти</a>
+            </li>
+        </ul>
+    </nav>
+
+    <!-- ================================
+         Hero Section
+         ================================ -->
+    <section class="hero">
+        <div class="hero-bg">
+            <div class="orb orb-1"></div>
+            <div class="orb orb-2"></div>
+            <div class="orb orb-3"></div>
+        </div>
+
+        <div class="floating-elements">
+            <div class="float-bubble">
+                <span class="dot"></span>
+                Клиент спрашивает...
+            </div>
+            <div class="float-bubble">
+                <span class="dot"></span>
+                ИИ анализирует данные
+            </div>
+            <div class="float-bubble">
+                <span class="dot"></span>
+                Документ загружен
+            </div>
+            <div class="float-bubble">
+                <span class="dot"></span>
+                Ответ готов ✓
+            </div>
+            <div class="float-bubble">
+                <span class="dot"></span>
+                Инструкции применены
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="hero-content">
+                <div class="hero-text">
+                    <div class="hero-badge">
+                        <span class="badge-dot"></span>
+                        ИИ-ассистент нового поколения
+                    </div>
+                    <h1>
+                        Весь опыт ваших менеджеров — в одном
+                        <span class="gradient-text">ИИ-помощнике</span>
+                    </h1>
+                    <p class="hero-subtitle">
+                        Загрузите историю переписки с клиентами, и ИИ поможет любому менеджеру отвечать так же профессионально, как ваши лучшие сотрудники.
+                    </p>
+                    <div class="hero-actions">
+                        <a href="/lk/index.html" class="btn btn-primary btn-lg">Подключить →</a>
+                        <a href="#pricing" class="btn btn-outline btn-lg">Тарифы</a>
+                    </div>
+                </div>
+
+                <div class="hero-illustration">
+                    <div class="chat-mockup">
+                        <div class="mockup-header">
+                            <div class="mockup-avatar"><img src="robot_avatar.png" alt="AI" width="24" height="24" style="border-radius:50%"></div>
+                            <div>
+                                <div class="mockup-name">ReplyMan AI</div>
+                                <div class="mockup-status">Онлайн</div>
+                            </div>
+                        </div>
+                        <div class="mockup-messages">
+                            <div class="mockup-msg user-msg">
+                                Клиент спрашивает про сроки доставки крупного заказа. Что отвечать?
+                            </div>
+                            <div class="mockup-typing">
+                                <div class="typing-dot"></div>
+                                <div class="typing-dot"></div>
+                                <div class="typing-dot"></div>
+                            </div>
+                            <div class="mockup-msg ai-msg">
+                                <div class="ai-label"><img src="robot_avatar.png" alt="" width="24" height="24" style="border-radius:50%"> ReplyMan</div>
+                                По данным из переписки (от 12.01), для заказов свыше 50 ед. стандартный срок — 7 рабочих дней. Можно предложить экспресс-доставку за 3 дня с доплатой 15%.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================================
+         How It Works
+         ================================ -->
+    <section class="section how-it-works" id="how-it-works">
+        <div class="container">
+            <div class="section-header reveal">
+                <div class="section-label">Просто и быстро</div>
+                <h2 class="section-title">Как это работает</h2>
+                <p class="section-desc">Три простых шага — и ваш ИИ-ассистент готов помогать менеджерам</p>
+            </div>
+
+            <div class="steps-container">
+                <!-- Step 1 -->
+                <div class="step" data-step="1">
+                    <div class="step-number">1</div>
+                    <div class="step-line"></div>
+                    <div class="step-content">
+                        <h3 class="step-title">Загрузка файлов</h3>
+                        <p class="step-desc">Загрузите переписки, инструкции и документы в любом формате</p>
+                        <div class="step-animation">
+                            <div class="upload-animation">
+                                <div class="upload-file">
+                                    <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <rect x="8" y="4" width="32" height="40" rx="4" fill="#f5f3ff" stroke="#a78bfa" stroke-width="2"/>
+                                        <path d="M16 22h16M16 28h12M16 34h8" stroke="#7c3aed" stroke-width="2" stroke-linecap="round"/>
+                                        <path d="M8 16l12-12h16a4 4 0 014 4v40a4 4 0 01-4 4H12a4 4 0 01-4-4V16z" fill="#f5f3ff" stroke="#7c3aed" stroke-width="2"/>
+                                        <path d="M20 4v12h12" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                    <span>документ.pdf</span>
+                                </div>
+                                <div class="upload-zone">
+                                    <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M16 4v18M10 16l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                        <path d="M4 22v4a2 2 0 002 2h20a2 2 0 002-2v-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                    </svg>
+                                    <span>Перетащите сюда</span>
+                                </div>
+                            </div>
+                            <div class="format-badges">
+                                <span class="format-badge">TXT</span>
+                                <span class="format-badge">PDF</span>
+                                <span class="format-badge">DOCX</span>
+                                <span class="format-badge">HTML</span>
+                                <span class="format-badge">JSON</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 2 -->
+                <div class="step" data-step="2">
+                    <div class="step-number">2</div>
+                    <div class="step-line"></div>
+                    <div class="step-content">
+                        <h3 class="step-title">Обработка ИИ</h3>
+                        <p class="step-desc">ИИ анализирует содержимое и создаёт базу знаний вашей компании</p>
+                        <div class="step-animation">
+                            <div class="processing-animation">
+                                <div class="gears-container">
+                                    <!-- Big Gear -->
+                                    <svg class="gear gear-big" viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M30 18a12 12 0 100 24 12 12 0 000-24z" stroke="#7c3aed" stroke-width="2.5"/>
+                                        <path d="M30 6v6M30 48v6M6 30h6M48 30h6M12.2 12.2l4.2 4.2M43.6 43.6l4.2 4.2M12.2 47.8l4.2-4.2M43.6 16.4l4.2-4.2" stroke="#a78bfa" stroke-width="2.5" stroke-linecap="round"/>
+                                    </svg>
+                                    <!-- Small Gear -->
+                                    <svg class="gear gear-small" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M20 13a7 7 0 100 14 7 7 0 000-14z" stroke="#ec4899" stroke-width="2"/>
+                                        <path d="M20 6v4M20 30v4M6 20h4M30 20h4M10 10l3 3M27 27l3 3M10 30l3-3M27 13l3-3" stroke="#f9a8d4" stroke-width="2" stroke-linecap="round"/>
+                                    </svg>
+                                </div>
+                                <div class="processing-particles">
+                                    <div class="particle"></div>
+                                    <div class="particle"></div>
+                                    <div class="particle"></div>
+                                    <div class="particle"></div>
+                                    <div class="particle"></div>
+                                </div>
+                                <div class="processing-bar">
+                                    <div class="processing-bar-fill"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 3 -->
+                <div class="step" data-step="3">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h3 class="step-title">Готовые ответы</h3>
+                        <p class="step-desc">Менеджер задаёт вопрос — получает точный ответ за секунды</p>
+                        <div class="step-animation">
+                            <div class="answer-animation">
+                                <div class="answer-chat-user">
+                                    <div class="answer-avatar-user">👤</div>
+                                    <div class="answer-bubble-user">Какие условия возврата?</div>
+                                </div>
+                                <div class="answer-chat-ai">
+                                    <div class="answer-avatar-ai"><img src="robot_avatar.png" alt="AI" width="24" height="24" style="border-radius:50%"></div>
+                                    <div class="answer-bubble-ai">
+                                        <div class="ai-tag">ReplyMan</div>
+                                        <span id="typedAnswer"></span><span class="typing-cursor">|</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================================
+         Who Is It For
+         ================================ -->
+    <section class="section who-is-for" id="who">
+        <div class="container">
+            <div class="section-header reveal">
+                <div class="section-label">Целевая аудитория</div>
+                <h2 class="section-title">Для кого ReplyMan</h2>
+                <p class="section-desc">Инструмент, который полезен каждому участнику процесса продаж и поддержки</p>
+            </div>
+
+            <div class="for-cards">
+                <div class="for-card reveal reveal-delay-1">
+                    <div class="for-icon">🧑‍💼</div>
+                    <h3 class="for-title">Новый менеджер?</h3>
+                    <p class="for-desc">Доступен весь опыт команды с первого дня. Все корпоративные переписки, инструкции и знания — всегда под рукой. Нет необходимости ждать наставника или искать ответ в chaotic чатах.</p>
+                </div>
+                <div class="for-card reveal reveal-delay-2">
+                    <div class="for-icon">⭐</div>
+                    <h3 class="for-title">Опытный менеджер?</h3>
+                    <p class="for-desc">Не нужно вспоминать все детали — ИИ подскажет. Быстрый доступ к сложной информации: условия спецклиентов, нестандартные кейсы, последние договорённости с поставщиками.</p>
+                </div>
+                <div class="for-card reveal reveal-delay-3">
+                    <div class="for-icon">🏢</div>
+                    <h3 class="for-title">Владелец бизнеса?</h3>
+                    <p class="for-desc">Стандартизируйте качество ответов и сократите время обучения новых сотрудников. Каждый менеджер отвечает в едином стиле, а клиенты получают консистентный опыт.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================================
+         Features
+         ================================ -->
+    <section class="section features" id="features">
+        <div class="container">
+            <div class="section-header reveal">
+                <div class="section-label">Возможности</div>
+                <h2 class="section-title">Всё, что нужно вашему отделу</h2>
+                <p class="section-desc">Мощные инструменты для работы с клиентами на основе ИИ</p>
+            </div>
+
+            <div class="features-grid">
+                <div class="feature-card reveal reveal-delay-1">
+                    <div class="feature-icon">💬</div>
+                    <h3 class="feature-title">Умный чат</h3>
+                    <p class="feature-desc">Задайте вопрос о продукте, клиенте или ситуации — ИИ найдёт ответ в загруженных данных. Работает как ваш личный эксперт по компании.</p>
+                </div>
+                <div class="feature-card reveal reveal-delay-2">
+                    <div class="feature-icon">📁</div>
+                    <h3 class="feature-title">Загрузка знаний</h3>
+                    <p class="feature-desc">Поддержка TXT, PDF, DOCX, JSON и других форматов. Загружайте сколько нужно — ИИ обработает любой объём данных для создания базы знаний.</p>
+                </div>
+                <div class="feature-card reveal reveal-delay-3">
+                    <div class="feature-icon">🎓</div>
+                    <h3 class="feature-title">Тренажёр общения <span class="feature-badge">Только в тарифе Бизнес</span></h3>
+                    <p class="feature-desc">ИИ играет роль клиента и задаёт вопросы на основе ваших данных. Тренируйтесь без реальных рисков и повышайте навыки общения.</p>
+                </div>
+                <div class="feature-card reveal reveal-delay-4">
+                    <div class="feature-icon">⚙️</div>
+                    <h3 class="feature-title">Настройка ИИ</h3>
+                    <p class="feature-desc">Задайте инструкции: тональность, правила скидок, гарантийные условия — ИИ будет учитывать их в каждом ответе, сохраняя единый стиль компании.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================================
+         Pricing
+         ================================ -->
+    <section class="section pricing" id="pricing">
+        <div class="container">
+            <div class="section-header reveal">
+                <div class="section-label">Тарифы</div>
+                <h2 class="section-title">Выберите подходящий план</h2>
+                <p class="section-desc">Выберите тариф, который подходит вашей команде</p>
+            </div>
+
+            <div class="pricing-grid">
+                <!-- Старт -->
+                <div class="pricing-card reveal reveal-delay-1">
+                    <div class="pricing-name">Старт</div>
+                    <div class="pricing-desc">Для небольших команд и знакомства с сервисом</div>
+                    <div class="pricing-price">
+                        <span class="pricing-amount">790</span>
+                        <span class="pricing-period">₽/мес</span>
+                    </div>
+                    <ul class="pricing-features">
+                        <li>
+                            <span class="check">
+                                <svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            </span>
+                            До 20 обращений в день
+                        </li>
+                        <li>
+                            <span class="check">
+                                <svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            </span>
+                            Загрузка файлов (до 30MB)
+                        </li>
+                        <li>
+                            <span class="check">
+                                <svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            </span>
+                            Умный чат с ИИ
+                        </li>
+                        <li>
+                            <span class="check">
+                                <svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            </span>
+                            Настройка инструкций ИИ
+                        </li>
+                        <li>
+                            <span class="check">
+                                <svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            </span>
+                            Email поддержка
+                        </li>
+                    </ul>
+                    <a href="/lk/index.html" class="btn btn-outline btn-lg">Начать</a>
+                </div>
+
+                <!-- Бизнес -->
+                <div class="pricing-card featured reveal reveal-delay-2">
+                    <div class="pricing-recommend">Рекомендуем</div>
+                    <div class="pricing-name">Бизнес</div>
+                    <div class="pricing-desc">Для команд, которым нужен максимум возможностей</div>
+                    <div class="pricing-price">
+                        <span class="pricing-amount">1 490</span>
+                        <span class="pricing-period">₽/мес</span>
+                    </div>
+                    <ul class="pricing-features">
+                        <li>
+                            <span class="check">
+                                <svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            </span>
+                            Без ограничений по обращениям
+                        </li>
+                        <li>
+                            <span class="check">
+                                <svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            </span>
+                            Загрузка файлов (до 30MB)
+                        </li>
+                        <li>
+                            <span class="check">
+                                <svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            </span>
+                            Умный чат с ИИ
+                        </li>
+                        <li>
+                            <span class="check">
+                                <svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            </span>
+                            Настройка инструкций ИИ
+                        </li>
+                        <li>
+                            <span class="check">
+                                <svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            </span>
+                            🎓 Тренажёр общения с ИИ-клиентом
+                        </li>
+                        <li>
+                            <span class="check">
+                                <svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            </span>
+                            Приоритетная поддержка
+                        </li>
+                    </ul>
+                    <a href="/lk/index.html" class="btn btn-primary btn-lg">Начать →</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================================
+         Footer
+         ================================ -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <a href="/" class="logo">
+                        <div class="logo-icon"><img src="logo_rm.png" alt="ReplyMan"></div>
+                        <span class="logo-text">ReplyMan</span><span class="logo-beta">beta</span>
+                    </a>
+                    <p class="footer-about">ИИ-ассистент для менеджеров по продажам и поддержке. Весь опыт вашей команды — в одном месте.</p>
+                </div>
+                <div>
+                    <div class="footer-title">Навигация</div>
+                    <ul class="footer-links">
+                        <li><a href="#features">Возможности</a></li>
+                        <li><a href="#how-it-works">Как это работает</a></li>
+                        <li><a href="#pricing">Тарифы</a></li>
+                        <li><a href="/lk/index.html">Войти в кабинет</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <div class="footer-title">Контакты</div>
+                    <ul class="footer-links">
+                        <li><a href="mailto:info@replyman.ru">info@replyman.ru</a></li>
+                        <li><a href="https://replyman.ru">replyman.ru</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <div class="footer-legal">
+                    ИП Чурствин С.Ю.<br>
+                    ИНН 381304191630<br>
+                    ОГРН/ОГРНИП 310381606200012
+                </div>
+                <div class="footer-copyright">
+                    &copy; 2025 ReplyMan. Все права защищены.<br>
+                    <a href="#" onclick="openModal(); return false;" style="color: inherit; text-decoration: underline; text-decoration-color: rgba(255,255,255,0.3); text-underline-offset: 3px;">Пользовательское соглашение</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ================================
+         Modal: Пользовательское соглашение
+         ================================ -->
+    <div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)closeModal()">
+        <div class="modal-box">
+            <button class="modal-close" onclick="closeModal()">✕</button>
+            <h2>Пользовательское соглашение</h2>
+            <p class="modal-subtitle">Российская Федерация, редакция от 04.04.2026 г.</p>
+
+            <p>ИП Чурствин Сергей Юрьевич, именуемое в дальнейшем «Исполнитель», с одной стороны, и юридическое лицо или индивидуальный предприниматель, именуемое в дальнейшем «Пользователь», с другой стороны, совместно именуемые «Стороны», имеют намерение заключить Договор о нижеследующем.</p>
+
+            <h3>1. Термины и определения</h3>
+            <p><strong>1.1</strong> <strong>Акцепт оферты</strong> — факт оплаты Пользователем услуг является безоговорочным принятием условий настоящего соглашения.</p>
+            <p><strong>1.2</strong> <strong>Сервис</strong> — программное обеспечение «ReplyMan», предоставляемое Исполнителем через сеть Интернет по адресу https://replyman.ru, включающее функционал ИИ-ассистента для обработки обращений клиентов, загрузки файлов, анализа данных и тренажёра общения.</p>
+            <p><strong>1.3</strong> <strong>Личный кабинет</strong> — информационный ресурс с уникальным идентификатором, доступный Пользователю после регистрации по адресу https://replyman.ru/lk, предназначенный для использования функционала Сервиса.</p>
+            <p><strong>1.4</strong> <strong>Тарифный план</strong> — выбранный Пользователем тариф, определяющий объём доступного функционала и стоимость услуг. Информация о тарифных планах размещена на веб-сайте Исполнителя.</p>
+            <p><strong>1.5</strong> <strong>Загруженные данные</strong> — файлы, документы, переписки, инструкции и иные материалы, которые Пользователь загружает в Сервис для обработки с помощью ИИ.</p>
+
+            <h3>2. Предмет договора</h3>
+            <p><strong>2.1</strong> Исполнитель предоставляет Пользователю право доступа к Сервису в соответствии с его функциональным назначением и выбранным Тарифным планом, а Пользователь обязуется оплачивать услуги в соответствии с условиями настоящего Договора.</p>
+            <p><strong>2.2</strong> Настоящий Договор заключается Пользователем путём его акцепта согласно п. 1.1.</p>
+            <p><strong>2.3</strong> Пользователь вправе использовать Сервис только в пределах тех прав и теми способами, которые прямо предусмотрены настоящим Договором.</p>
+            <p><strong>2.4</strong> Территория, на которой допускается использование Сервиса — территория Российской Федерации.</p>
+
+            <h3>3. Стоимость и порядок оплаты</h3>
+            <p><strong>3.1</strong> За предоставляемый доступ к Сервису Пользователь обязуется уплачивать Исполнителю вознаграждение в соответствии с выбранным Тарифным планом.</p>
+            <p><strong>3.2</strong> Информация о Тарифных планах размещена на веб-сайте Исполнителя и в Личном кабинете Пользователя.</p>
+            <p><strong>3.3</strong> Оплата производится в российских рублях в безналичном порядке в форме 100% предоплаты.</p>
+            <p><strong>3.4</strong> Платеж зачисляется на лицевой счёт Пользователя не позднее 2 (двух) рабочих дней с даты поступления средств на расчётный счёт Исполнителя.</p>
+            <p><strong>3.5</strong> Исполнитель вправе в одностороннем порядке изменять Тарифные планы, размещая информацию об изменениях на веб-сайте Исполнителя не позднее 14 (четырнадцати) дней до даты введения изменений в действие.</p>
+            <p><strong>3.6</strong> При недостаточности денежных средств на лицевом счёте Пользователя для оплаты выбранного Тарифного плана, Исполнитель вправе ограничить доступ к Сервису.</p>
+
+            <h3>4. Порядок использования Сервиса</h3>
+            <p><strong>4.1</strong> Для использования Сервиса Пользователю необходимо пройти регистрацию на сайте Исполнителя, в результате которой будет создан Личный кабинет.</p>
+            <p><strong>4.2</strong> Пользователь несёт ответственность за безопасность своих логина и пароля, а также за все действия, совершённые с использованием его учётных данных.</p>
+            <p><strong>4.3</strong> Сервис предоставляется по принципу «как есть». Исполнитель не несёт ответственность за убытки, возникшие вследствие использования или невозможности использования Сервиса, а также за достоверность и полноту ответов, генерируемых ИИ на основе Загруженных данных.</p>
+            <p><strong>4.4</strong> Исполнитель вправе временно приостановить доступ к Сервису по техническим причинам на время их устранения.</p>
+            <p><strong>4.5</strong> Пользователь самостоятельно несёт ответственность за содержание Загруженных данных и гарантирует, что их использование не нарушает действующее законодательство Российской Федерации и права третьих лиц.</p>
+            <p><strong>4.6</strong> Пользователю запрещается:</p>
+            <ul>
+                <li>передавать права на использование Сервиса третьим лицам;</li>
+                <li>использовать Сервис для целей, противоречащих законодательству РФ;</li>
+                <li>загружать данные, содержащие вредоносное программное обеспечение;</li>
+                <li>пытаться получить несанкционированный доступ к системам Исполнителя.</li>
+            </ul>
+
+            <h3>5. Обработка данных</h3>
+            <p><strong>5.1</strong> Загруженные Пользователем данные обрабатываются Сервисом с использованием технологий искусственного интеллекта исключительно для предоставления функционала, описанного в настоящем Договоре.</p>
+            <p><strong>5.2</strong> Исполнитель не передаёт Загруженные данные третьим лицам, за исключением случаев, предусмотренных действующим законодательством Российской Федерации.</p>
+            <p><strong>5.3</strong> Исполнитель принимает разумные организационные и технические меры для защиты Загруженных данных от несанкционированного доступа, уничтожения, изменения, блокирования и иных неправомерных действий.</p>
+
+            <h3>6. Техническая поддержка</h3>
+            <p><strong>6.1</strong> Объём и порядок предоставления технической поддержки определяется выбранным Тарифным планом.</p>
+            <p><strong>6.2</strong> Запросы на техническую поддержку направляются по электронной почте: info@replyman.ru.</p>
+
+            <h3>7. Срок действия и порядок расторжения</h3>
+            <p><strong>7.1</strong> Договор вступает в силу с момента Акцепта оферты Пользователем.</p>
+            <p><strong>7.2</strong> Договор действует в течение оплаченного периода. При продлении оплаты до истечения текущего периода договор автоматически пролонгируется.</p>
+            <p><strong>7.3</strong> Если в течение 6 (шести) последовательных календарных месяцев Пользователь не совершает никаких действий в своём Личном кабинете, настоящий Договор считается прекратившим своё действие.</p>
+            <p><strong>7.4</strong> Договор может быть расторгнут в любое время по соглашению Сторон или по инициативе Пользователя.</p>
+            <p><strong>7.5</strong> При досрочном расторжении Договора по инициативе Пользователя Исполнитель в течение 30 (тридцати) календарных дней осуществляет возврат неиспользованных средств по заявлению Пользователя в безналичном порядке.</p>
+            <p><strong>7.6</strong> При расторжении Договора Исполнитель удаляет Личный кабинет Пользователя, включая все содержащиеся в нём данные, не позднее 30 (тридцати) календарных дней с даты прекращения действия Договора.</p>
+
+            <h3>8. Персональные данные</h3>
+            <p><strong>8.1</strong> Исполнитель обрабатывает персональные данные Пользователя в соответствии с Федеральным законом №152-ФЗ «О персональных данных».</p>
+            <p><strong>8.2</strong> Пользователь обязуется получать согласие субъектов персональных данных на их обработку при использовании Сервиса, если такие данные загружаются и обрабатываются Пользователем в рамках Сервиса.</p>
+
+            <h3>9. Конфиденциальность</h3>
+            <p><strong>9.1</strong> Стороны подтверждают, что информация, которой они обмениваются в рамках настоящего Договора, носит конфиденциальный характер.</p>
+            <p><strong>9.2</strong> Конфиденциальная информация не может быть опубликована или передана третьим лицам без письменного согласия другой Стороны, за исключением случаев, предусмотренных законодательством РФ.</p>
+
+            <h3>10. Прочие условия</h3>
+            <p><strong>10.1</strong> Во всём ином, что не предусмотрено настоящим Договором, Стороны руководствуются действующим законодательством Российской Федерации.</p>
+            <p><strong>10.2</strong> Споры между Сторонами разрешаются путём переговоров, а при недостижении согласия — в судебном порядке в соответствии с действующим законодательством РФ.</p>
+            <p><strong>10.3</strong> Совокупный размер ответственности Исполнителя по Договору ограничивается размером вознаграждения, полученного от Пользователя за предшествующие 3 (три) календарных месяца.</p>
+            <p><strong>10.4</strong> Стороны признают юридически значимой переписку по электронной почте: со стороны Исполнителя — с адресов в домене @replyman.ru, со стороны Пользователя — с адреса, указанного им при регистрации.</p>
+            <p><strong>10.5</strong> Исполнитель вправе вносить изменения в настоящую оферту в любой момент. Изменения вступают в силу с момента размещения изменённого текста на веб-сайте Исполнителя.</p>
+
+            <h3>11. Реквизиты Исполнителя</h3>
+            <p>
+                <strong>ИП Чурствин Сергей Юрьевич</strong><br>
+                ИНН 381304191630<br>
+                ОГРН/ОГРНИП 310381606200012<br><br>
+                <strong>Банковские реквизиты:</strong><br>
+                АО «ТБанк»<br>
+                ИНН банка: 7710140679<br>
+                БИК: 044525974<br>
+                Корреспондентский счёт: 30101810145250000974<br>
+                Юридический адрес банка: 127287, г. Москва, ул. Хуторская 2-я, д. 38А, стр. 26
+            </p>
+        </div>
+    </div>
+
+    <!-- ================================
+         JavaScript
+         ================================ -->
+    <script>
+        // ==============================
+        // Modal
+        // ==============================
+        function openModal() {
+            document.getElementById('modalOverlay').classList.add('open');
+            document.body.style.overflow = 'hidden';
+        }
+        function closeModal() {
+            document.getElementById('modalOverlay').classList.remove('open');
+            document.body.style.overflow = '';
+        }
+
+        // ==============================
+        // Sticky Header on scroll
+        // ==============================
+        (function() {
+            var header = document.getElementById('header');
+            var lastScroll = 0;
+
+            window.addEventListener('scroll', function() {
+                var scrollY = window.pageYOffset || document.documentElement.scrollTop;
+                if (scrollY > 40) {
+                    header.classList.add('scrolled');
+                } else {
+                    header.classList.remove('scrolled');
+                }
+                lastScroll = scrollY;
+            }, { passive: true });
+        })();
+
+        // ==============================
+        // Mobile menu toggle
+        // ==============================
+        (function() {
+            var toggle = document.getElementById('mobileToggle');
+            var mobileNav = document.getElementById('mobileNav');
+            var navLinks = document.getElementById('navLinks');
+
+            toggle.addEventListener('click', function() {
+                toggle.classList.toggle('active');
+                mobileNav.classList.toggle('open');
+                document.body.style.overflow = mobileNav.classList.contains('open') ? 'hidden' : '';
+            });
+
+            window.closeNav = function() {
+                toggle.classList.remove('active');
+                mobileNav.classList.remove('open');
+                document.body.style.overflow = '';
+            };
+        })();
+
+        // ==============================
+        // Scroll reveal with IntersectionObserver
+        // ==============================
+        (function() {
+            var reveals = document.querySelectorAll('.reveal');
+
+            if ('IntersectionObserver' in window) {
+                var observer = new IntersectionObserver(function(entries) {
+                    entries.forEach(function(entry) {
+                        if (entry.isIntersecting) {
+                            entry.target.classList.add('visible');
+                            observer.unobserve(entry.target);
+                        }
+                    });
+                }, {
+                    threshold: 0.15,
+                    rootMargin: '0px 0px -40px 0px'
+                });
+
+                reveals.forEach(function(el) {
+                    observer.observe(el);
+                });
+            } else {
+                // Fallback: show all
+                reveals.forEach(function(el) {
+                    el.classList.add('visible');
+                });
+            }
+        })();
+
+        // ==============================
+        // Step animations with IntersectionObserver
+        // ==============================
+        (function() {
+            var steps = document.querySelectorAll('.step');
+            var typedAnswerEl = document.getElementById('typedAnswer');
+            var answerText = 'По регламенту: возврат в течение 14 дней без вопросов. Для VIP-клиентов — до 30 дней.';
+            var typingInterval = null;
+            var step3Animated = false;
+
+            function typeAnswer() {
+                if (step3Animated) return;
+                step3Animated = true;
+                typedAnswerEl.textContent = '';
+                var i = 0;
+
+                typingInterval = setInterval(function() {
+                    if (i < answerText.length) {
+                        typedAnswerEl.textContent += answerText[i];
+                        i++;
+                    } else {
+                        clearInterval(typingInterval);
+                    }
+                }, 30);
+            }
+
+            function resetAnimations() {
+                step3Animated = false;
+                if (typingInterval) clearInterval(typingInterval);
+                if (typedAnswerEl) typedAnswerEl.textContent = '';
+            }
+
+            if ('IntersectionObserver' in window) {
+                var stepObserver = new IntersectionObserver(function(entries) {
+                    entries.forEach(function(entry) {
+                        var step = entry.target;
+                        var stepNum = step.getAttribute('data-step');
+
+                        if (entry.isIntersecting) {
+                            step.classList.add('active');
+
+                            // Trigger typing animation for step 3
+                            if (stepNum === '3' && !step3Animated) {
+                                setTimeout(typeAnswer, 1200);
+                            }
+                        } else {
+                            // Reset when out of view (for looping)
+                            step.classList.remove('active');
+                            if (stepNum === '3') {
+                                resetAnimations();
+                            }
+                        }
+                    });
+                }, {
+                    threshold: 0.3,
+                    rootMargin: '0px 0px -60px 0px'
+                });
+
+                steps.forEach(function(step) {
+                    stepObserver.observe(step);
+                });
+            } else {
+                steps.forEach(function(step) {
+                    step.classList.add('active');
+                });
+                typeAnswer();
+            }
+        })();
+
+        // ==============================
+        // Smooth scroll for anchor links
+        // ==============================
+        (function() {
+            document.querySelectorAll('a[href^="#"]').forEach(function(anchor) {
+                anchor.addEventListener('click', function(e) {
+                    var targetId = this.getAttribute('href');
+                    if (targetId === '#') return;
+                    var target = document.querySelector(targetId);
+                    if (target) {
+                        e.preventDefault();
+                        var headerHeight = 80;
+                        var targetPos = target.getBoundingClientRect().top + window.pageYOffset - headerHeight;
+                        window.scrollTo({
+                            top: targetPos,
+                            behavior: 'smooth'
+                        });
+                    }
+                });
+            });
+        })();
+    </script>
+</body>
+</html>
