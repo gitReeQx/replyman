@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ReplyMan — ИИ-ассистент для менеджеров по продажам и поддержке</title>
-    <meta name="description" content="Загрузите историю переписки с клиентами, и ИИ поможет любому менеджеру отвечать так же профессионально, как ваши лучшие сотрудники.">
+    <meta name="description" content="Загрузите внутренние инструкции, переписки и документы — ИИ поможет менеджерам отвечать точно и профессионально.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -1414,9 +1414,15 @@
 
         .pricing-price {
             display: flex;
+            flex-direction: column;
+            margin-bottom: 20px;
+        }
+
+        .pricing-price-monthly {
+            display: flex;
             align-items: baseline;
             gap: 4px;
-            margin-bottom: 28px;
+            margin-bottom: 6px;
         }
 
         .pricing-amount {
@@ -1433,6 +1439,17 @@
             font-size: 0.9rem;
             color: var(--text-secondary);
             font-weight: 500;
+        }
+
+        .pricing-price-yearly {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            padding-left: 4px;
+        }
+
+        .pricing-price-yearly .yearly-amount {
+            font-weight: 700;
+            color: var(--primary);
         }
 
         .pricing-features {
@@ -1969,15 +1986,15 @@
         <div class="floating-elements">
             <div class="float-bubble">
                 <span class="dot"></span>
-                Клиент спрашивает...
+                Инструкция загружена
             </div>
             <div class="float-bubble">
                 <span class="dot"></span>
-                ИИ анализирует данные
+                ИИ изучает регламенты
             </div>
             <div class="float-bubble">
                 <span class="dot"></span>
-                Документ загружен
+                Документы обработаны
             </div>
             <div class="float-bubble">
                 <span class="dot"></span>
@@ -1985,7 +2002,7 @@
             </div>
             <div class="float-bubble">
                 <span class="dot"></span>
-                Инструкции применены
+                Можно добавить переписку
             </div>
         </div>
 
@@ -1994,14 +2011,14 @@
                 <div class="hero-text">
                     <div class="hero-badge">
                         <span class="badge-dot"></span>
-                        ИИ-ассистент нового поколения
+                        ИИ-ассистент на основе ваших документов
                     </div>
                     <h1>
-                        Весь опыт ваших менеджеров — в одном
+                        Вся база знаний компании — в одном
                         <span class="gradient-text">ИИ-помощнике</span>
                     </h1>
                     <p class="hero-subtitle">
-                        Загрузите историю переписки с клиентами, и ИИ поможет любому менеджеру отвечать так же профессионально, как ваши лучшие сотрудники.
+                        Загрузите внутренние инструкции, переписки, документацию — и ИИ поможет любому менеджеру отвечать точно и профессионально.
                     </p>
                     <div class="hero-actions">
                         <a href="/lk/index.html" class="btn btn-primary btn-lg">Подключить →</a>
@@ -2020,7 +2037,7 @@
                         </div>
                         <div class="mockup-messages">
                             <div class="mockup-msg user-msg">
-                                Клиент спрашивает про сроки доставки крупного заказа. Что отвечать?
+                                Какие условия возврата по новому регламенту?
                             </div>
                             <div class="mockup-typing">
                                 <div class="typing-dot"></div>
@@ -2029,7 +2046,7 @@
                             </div>
                             <div class="mockup-msg ai-msg">
                                 <div class="ai-label"><img src="robot_avatar.png" alt="" width="24" height="24" style="border-radius:50%"> ReplyMan</div>
-                                По данным из переписки (от 12.01), для заказов свыше 50 ед. стандартный срок — 7 рабочих дней. Можно предложить экспресс-доставку за 3 дня с доплатой 15%.
+                                Согласно внутренней инструкции от 01.02.2026, возврат товара надлежащего качества возможен в течение 14 дней. Для VIP-клиентов срок увеличен до 30 дней.
                             </div>
                         </div>
                     </div>
@@ -2055,8 +2072,8 @@
                     <div class="step-number">1</div>
                     <div class="step-line"></div>
                     <div class="step-content">
-                        <h3 class="step-title">Загрузка файлов</h3>
-                        <p class="step-desc">Загрузите переписки, инструкции и документы в любом формате</p>
+                        <h3 class="step-title">Загрузка документов</h3>
+                        <p class="step-desc">Загрузите инструкции, переписки, и базу знаний в любом формате</p>
                         <div class="step-animation">
                             <div class="upload-animation">
                                 <div class="upload-file">
@@ -2066,7 +2083,7 @@
                                         <path d="M8 16l12-12h16a4 4 0 014 4v40a4 4 0 01-4 4H12a4 4 0 01-4-4V16z" fill="#f5f3ff" stroke="#7c3aed" stroke-width="2"/>
                                         <path d="M20 4v12h12" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                                     </svg>
-                                    <span>документ.pdf</span>
+                                    <span>инструкция.pdf</span>
                                 </div>
                                 <div class="upload-zone">
                                     <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -2093,7 +2110,7 @@
                     <div class="step-line"></div>
                     <div class="step-content">
                         <h3 class="step-title">Обработка ИИ</h3>
-                        <p class="step-desc">ИИ анализирует содержимое и создаёт базу знаний вашей компании</p>
+                        <p class="step-desc">ИИ анализирует все загруженные материалы и создаёт базу знаний вашей компании</p>
                         <div class="step-animation">
                             <div class="processing-animation">
                                 <div class="gears-container">
@@ -2128,7 +2145,7 @@
                     <div class="step-number">3</div>
                     <div class="step-content">
                         <h3 class="step-title">Готовые ответы</h3>
-                        <p class="step-desc">Менеджер задаёт вопрос — получает точный ответ за секунды</p>
+                        <p class="step-desc">Менеджер задаёт вопрос — получает точный ответ за секунды, основанный на ваших документах</p>
                         <div class="step-animation">
                             <div class="answer-animation">
                                 <div class="answer-chat-user">
@@ -2165,17 +2182,17 @@
                 <div class="for-card reveal reveal-delay-1">
                     <div class="for-icon">🧑‍💼</div>
                     <h3 class="for-title">Новый менеджер?</h3>
-                    <p class="for-desc">Доступен весь опыт команды с первого дня. Все корпоративные переписки, инструкции и знания — всегда под рукой. Нет необходимости ждать наставника или искать ответ в chaotic чатах.</p>
+                    <p class="for-desc">Доступна вся база знаний компании с первого дня. Все инструкции, переписки и внутренние документы — всегда под рукой. Нет необходимости ждать наставника или искать ответ в хаотичных чатах.</p>
                 </div>
                 <div class="for-card reveal reveal-delay-2">
                     <div class="for-icon">⭐</div>
                     <h3 class="for-title">Опытный менеджер?</h3>
-                    <p class="for-desc">Не нужно вспоминать все детали — ИИ подскажет. Быстрый доступ к сложной информации: условия спецклиентов, нестандартные кейсы, последние договорённости с поставщиками.</p>
+                    <p class="for-desc">Не нужно вспоминать все детали — ИИ подскажет. Быстрый доступ к сложной информации: условия для спецклиентов, нестандартные кейсы, последние обновления регламентов.</p>
                 </div>
                 <div class="for-card reveal reveal-delay-3">
                     <div class="for-icon">🏢</div>
                     <h3 class="for-title">Владелец бизнеса?</h3>
-                    <p class="for-desc">Стандартизируйте качество ответов и сократите время обучения новых сотрудников. Каждый менеджер отвечает в едином стиле, а клиенты получают консистентный опыт.</p>
+                    <p class="for-desc">Стандартизируйте качество ответов и сократите время обучения новых сотрудников. Каждый менеджер отвечает в едином стиле, опираясь на актуальные документы компании.</p>
                 </div>
             </div>
         </div>
@@ -2196,17 +2213,17 @@
                 <div class="feature-card reveal reveal-delay-1">
                     <div class="feature-icon">💬</div>
                     <h3 class="feature-title">Умный чат</h3>
-                    <p class="feature-desc">Задайте вопрос о продукте, клиенте или ситуации — ИИ найдёт ответ в загруженных данных. Работает как ваш личный эксперт по компании.</p>
+                    <p class="feature-desc">Задайте вопрос о продукте, клиенте или ситуации — ИИ найдёт ответ в загруженных документах и инструкциях. Работает как ваш личный эксперт по компании.</p>
                 </div>
                 <div class="feature-card reveal reveal-delay-2">
                     <div class="feature-icon">📁</div>
                     <h3 class="feature-title">Загрузка знаний</h3>
-                    <p class="feature-desc">Поддержка TXT, PDF, DOCX, JSON и других форматов. Загружайте сколько нужно — ИИ обработает любой объём данных для создания базы знаний.</p>
+                    <p class="feature-desc">Поддержка TXT, PDF, DOCX, JSON и других форматов. Загружайте внутренние инструкции, переписки, и документацию — ИИ обработает любой объём данных.</p>
                 </div>
                 <div class="feature-card reveal reveal-delay-3">
                     <div class="feature-icon">🎓</div>
                     <h3 class="feature-title">Тренажёр общения <span class="feature-badge">Только в тарифе Бизнес</span></h3>
-                    <p class="feature-desc">ИИ играет роль клиента и задаёт вопросы на основе ваших данных. Тренируйтесь без реальных рисков и повышайте навыки общения.</p>
+                    <p class="feature-desc">ИИ играет роль клиента и задаёт вопросы на основе ваших документов. Тренируйтесь без реальных рисков и повышайте навыки общения.</p>
                 </div>
                 <div class="feature-card reveal reveal-delay-4">
                     <div class="feature-icon">⚙️</div>
@@ -2218,112 +2235,126 @@
     </section>
 
     <!-- ================================
-         Pricing
-         ================================ -->
-    <section class="section pricing" id="pricing">
-        <div class="container">
-            <div class="section-header reveal">
-                <div class="section-label">Тарифы</div>
-                <h2 class="section-title">Выберите подходящий план</h2>
-                <p class="section-desc">Выберите тариф, который подходит вашей команде</p>
-            </div>
+     Pricing
+     ================================ -->
+<section class="section pricing" id="pricing">
+    <div class="container">
+        <div class="section-header reveal">
+            <div class="section-label">Тарифы</div>
+            <h2 class="section-title">Выберите подходящий план</h2>
+            <p class="section-desc">Выберите тариф, который подходит вашей команде</p>
+        </div>
 
-            <div class="pricing-grid">
-                <!-- Старт -->
-                <div class="pricing-card reveal reveal-delay-1">
-                    <div class="pricing-name">Старт</div>
-                    <div class="pricing-desc">Для небольших команд и знакомства с сервисом</div>
-                    <div class="pricing-price">
-                        <span class="pricing-amount">790</span>
-                        <span class="pricing-period">₽/мес</span>
-                    </div>
-                    <ul class="pricing-features">
-                        <li>
-                            <span class="check">
-                                <svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                            </span>
-                            До 20 обращений в день
-                        </li>
-                        <li>
-                            <span class="check">
-                                <svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                            </span>
-                            Загрузка файлов (до 30MB)
-                        </li>
-                        <li>
-                            <span class="check">
-                                <svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                            </span>
-                            Умный чат с ИИ
-                        </li>
-                        <li>
-                            <span class="check">
-                                <svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                            </span>
-                            Настройка инструкций ИИ
-                        </li>
-                        <li>
-                            <span class="check">
-                                <svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                            </span>
-                            Email поддержка
-                        </li>
-                    </ul>
-                    <a href="/lk/index.html" class="btn btn-outline btn-lg">Начать</a>
-                </div>
-
-                <!-- Бизнес -->
-                <div class="pricing-card featured reveal reveal-delay-2">
-                    <div class="pricing-recommend">Рекомендуем</div>
-                    <div class="pricing-name">Бизнес</div>
-                    <div class="pricing-desc">Для команд, которым нужен максимум возможностей</div>
-                    <div class="pricing-price">
+        <div class="pricing-grid">
+            <!-- Старт -->
+            <div class="pricing-card reveal reveal-delay-1">
+                <div class="pricing-name">Старт</div>
+                <div class="pricing-desc">Для небольших команд и знакомства с сервисом</div>
+                <div class="pricing-price">
+                    <div class="pricing-price-monthly">
                         <span class="pricing-amount">1 490</span>
                         <span class="pricing-period">₽/мес</span>
                     </div>
-                    <ul class="pricing-features">
-                        <li>
-                            <span class="check">
-                                <svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                            </span>
-                            Без ограничений по обращениям
-                        </li>
-                        <li>
-                            <span class="check">
-                                <svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                            </span>
-                            Загрузка файлов (до 30MB)
-                        </li>
-                        <li>
-                            <span class="check">
-                                <svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                            </span>
-                            Умный чат с ИИ
-                        </li>
-                        <li>
-                            <span class="check">
-                                <svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                            </span>
-                            Настройка инструкций ИИ
-                        </li>
-                        <li>
-                            <span class="check">
-                                <svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                            </span>
-                            🎓 Тренажёр общения с ИИ-клиентом
-                        </li>
-                        <li>
-                            <span class="check">
-                                <svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                            </span>
-                            Приоритетная поддержка
-                        </li>
-                    </ul>
-                    <a href="/lk/index.html" class="btn btn-primary btn-lg">Начать →</a>
+                    <div class="pricing-price-yearly">
+                        <span style="text-decoration: line-through; color: #9ca3af; margin-right: 6px;">17 490 ₽</span>
+                        <span class="yearly-amount">14 900 ₽</span> при оплате за год
+                        <div style="font-size: 0.8rem; color: #10b981; margin-top: 4px;">Экономия 2 590 ₽</div>
+                    </div>
                 </div>
+                <ul class="pricing-features">
+                    <li>
+                        <span class="check">
+                            <svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        </span>
+                        До 20 обращений в день
+                    </li>
+                    <li>
+                        <span class="check">
+                            <svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        </span>
+                        Загрузка файлов (до 30MB)
+                    </li>
+                    <li>
+                        <span class="check">
+                            <svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        </span>
+                        Умный чат с ИИ
+                    </li>
+                    <li>
+                        <span class="check">
+                            <svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        </span>
+                        Настройка инструкций ИИ
+                    </li>
+                    <li>
+                        <span class="check">
+                            <svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        </span>
+                        Email поддержка
+                    </li>
+                </ul>
+                <a href="/lk/index.html" class="btn btn-outline btn-lg">Начать</a>
+            </div>
+
+            <!-- Бизнес -->
+            <div class="pricing-card featured reveal reveal-delay-2">
+                <div class="pricing-recommend">Рекомендуем</div>
+                <div class="pricing-name">Бизнес</div>
+                <div class="pricing-desc">Для команд, которым нужен максимум возможностей</div>
+                <div class="pricing-price">
+                    <div class="pricing-price-monthly">
+                        <span class="pricing-amount">2 890</span>
+                        <span class="pricing-period">₽/мес</span>
+                    </div>
+                    <div class="pricing-price-yearly">
+                        <span style="text-decoration: line-through; color: #9ca3af; margin-right: 6px;">34 680 ₽</span>
+                        <span class="yearly-amount">28 900 ₽</span> при оплате за год
+                        <div style="font-size: 0.8rem; color: #10b981; margin-top: 4px;">Экономия 5 780 ₽</div>
+                    </div>
+                </div>
+                <ul class="pricing-features">
+                    <li>
+                        <span class="check">
+                            <svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        </span>
+                        Без ограничений по обращениям
+                    </li>
+                    <li>
+                        <span class="check">
+                            <svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        </span>
+                        Загрузка файлов (до 30MB)
+                    </li>
+                    <li>
+                        <span class="check">
+                            <svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        </span>
+                        Умный чат с ИИ
+                    </li>
+                    <li>
+                        <span class="check">
+                            <svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        </span>
+                        Настройка инструкций ИИ
+                    </li>
+                    <li>
+                        <span class="check">
+                            <svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        </span>
+                        🎓 Тренажёр общения с ИИ-клиентом
+                    </li>
+                    <li>
+                        <span class="check">
+                            <svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        </span>
+                        Приоритетная поддержка
+                    </li>
+                </ul>
+                <a href="/lk/index.html" class="btn btn-primary btn-lg">Начать →</a>
             </div>
         </div>
-    </section>
+    </div>
+</section>
 
     <!-- ================================
          Footer
@@ -2336,7 +2367,7 @@
                         <div class="logo-icon"><img src="logo_rm.png" alt="ReplyMan"></div>
                         <span class="logo-text">ReplyMan</span><span class="logo-beta">beta</span>
                     </a>
-                    <p class="footer-about">ИИ-ассистент для менеджеров по продажам и поддержке. Весь опыт вашей команды — в одном месте.</p>
+                    <p class="footer-about">ИИ-ассистент для менеджеров по продажам и поддержке. Вся база знаний вашей компании — в одном месте.</p>
                 </div>
                 <div>
                     <div class="footer-title">Навигация</div>
@@ -2362,7 +2393,7 @@
                     ОГРН/ОГРНИП 310381606200012
                 </div>
                 <div class="footer-copyright">
-                    &copy; 2025 ReplyMan. Все права защищены.<br>
+                    &copy; 2026 ReplyMan. Все права защищены.<br>
                     <a href="#" onclick="openModal(); return false;" style="color: inherit; text-decoration: underline; text-decoration-color: rgba(255,255,255,0.3); text-underline-offset: 3px;">Пользовательское соглашение</a>
                 </div>
             </div>
