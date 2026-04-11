@@ -217,6 +217,10 @@ class APIClient {
         });
     }
     
+    async getActiveTraining() {
+        return this.request('/training/active');
+    }
+    
     async getScenarios() {
         return this.request('/training/scenarios');
     }

@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/styles.css">
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤖</text></svg>">
+    <link rel="icon" type="image/png" href="logo_rm.png">
 </head>
 <body>
     <button class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
@@ -17,7 +17,7 @@
         <!-- Sidebar -->
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-logo">
-                <div class="logo-icon">🤖</div>
+                <div class="logo-icon"><img src="logo_rm.png" alt="ReplyMan"></div>
                 <h1>ReplyMan</h1>
             </div>
             
@@ -84,12 +84,10 @@
                     <div class="chat-messages" id="chatMessages">
                         <!-- Welcome message -->
                         <div class="message assistant">
-                            <div class="message-avatar">🤖</div>
+                            <div class="message-avatar"><img src="robot_avatar.png" alt="AI"></div>
                             <div class="message-content">
                                 <div class="message-text">
-                                    <p>Здравствуйте! Я ваш ИИ-ассистент. Я могу помогать вам отвечать на вопросы клиентов на основе загруженной истории переписки.</p>
-                                    <p>Чтобы я мог давать точные ответы, загрузите файлы с историей переписки в разделе "Файлы переписки".</p>
-                                    <p>Чем могу помочь?</p>
+                                    <p>Здравствуйте! Я ваш ИИ-ассистент. Чем могу помочь?</p>
                                 </div>
                             </div>
                         </div>
@@ -116,5 +114,6 @@
     <script src="js/config.js"></script>
     <script src="js/api.js"></script>
     <script src="js/dashboard.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </body>
 </html>

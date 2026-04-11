@@ -17,6 +17,9 @@ async function initTrainingPage() {
     // Initialize components
     initSidebar();
     initTraining();
+    
+    // Check for active training session (persisted in Appwrite)
+    await restoreActiveTraining();
 }
 
 async function checkAuth() {
@@ -190,10 +193,7 @@ async function endTraining() {
         if (result.success) {
             // Show feedback
             showFeedback(result);
-            
-            // Update training count
-            const count = parseInt(localStorage.getItem('trainingsCount') || 0) + 1;
-            localStorage.setItem('trainingsCount', count);
+            // Счётчик тренировок инкрементируется на бэкенде при завершении
         } else {
             showAlert('Ошибка завершения тренировки', 'error');
         }
@@ -202,6 +202,46 @@ async function endTraining() {
     } finally {
         endBtn.disabled = false;
         endBtn.innerHTML = '🏁 Завершить тренировку';
+    }
+}
+
+async function restoreActiveTraining() {
+    try {
+        const result = await api.getActiveTraining();
+        
+        if (result.success && result.active && result.session_id) {
+            currentTrainingSessionId = result.session_id;
+            currentScenario = result.scenario || 'general';
+            const conversation = result.conversation || [];
+            
+            // Select correct scenario card
+            const scenarioCards = document.querySelectorAll('.scenario-card');
+            scenarioCards.forEach(c => {
+                c.classList.toggle('selected', c.dataset.scenario === currentScenario);
+            });
+            
+            // Show training chat
+            document.getElementById('scenarioSelection').classList.add('hidden');
+            document.getElementById('trainingChat').classList.remove('hidden');
+            document.getElementById('trainingFeedback').classList.add('hidden');
+            updateTrainingStatus(true);
+            
+            // Restore conversation
+            conversation.forEach(msg => {
+                if (msg.role === 'user') {
+                    addTrainingMessage(msg.content, 'client');
+                } else if (msg.role === 'assistant') {
+                    addTrainingMessage(msg.content, 'employee');
+                    messageCounter++;
+                }
+            });
+            updateMessageCounter();
+            
+            showAlert('Тренировка восстановлена', 'info');
+            setTimeout(() => showAlert('', ''), 2000);
+        }
+    } catch (error) {
+        console.warn('Failed to restore active training:', error);
     }
 }
 
@@ -364,4 +404,16 @@ function showAlert(message, type = '') {
             <span>${message}</span>
         </div>
     `;
+}
+
+async function loadTrainingsCount() {
+    try {
+        const statsResult = await api.request('/auth/stats');
+        if (statsResult.success) {
+            const trainingsCount = statsResult.trainings_count || 0;
+            document.getElementById('messageCounter').textContent = `Сообщений: ${trainingsCount}`;
+        }
+    } catch (error) {
+        // Silently fail - the counter is informational
+    }
 }

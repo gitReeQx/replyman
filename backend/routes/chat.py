@@ -27,7 +27,7 @@ def get_user_id(
     session_token: Optional[str] = None,
     request: Optional[Request] = None,
     authorization: Optional[str] = None
-) -> str:
+) -> Optional[str]:
     """Получить ID пользователя из сессии (cookie или Authorization header)"""
     token = None
     # Сначала пробуем Authorization header
@@ -41,8 +41,8 @@ def get_user_id(
         token = request.cookies.get("session_token")
     
     if token and token in sessions:
-        return sessions[token].get("user_id", "dev_user")
-    return "dev_user"
+        return sessions[token].get("user_id")
+    return None
 
 
 @router.post("/message", response_model=ChatResponse)
@@ -53,6 +53,8 @@ async def send_message(
     fastapi_request: Request = None  # добавить для возможности получить request
 ):
     uid = get_user_id(session_token, fastapi_request, authorization)
+    if not uid:
+        return ChatResponse(success=False, message="Не авторизован", response="", session_id="")
     logger.info(f"=== CHAT from user: {uid} ===")
     print(f"=== CHAT: use_context={request.use_context}, uid={uid} ===")
     
@@ -108,6 +110,13 @@ async def send_message(
         "role": "assistant",
         "content": response_text
     })
+    
+    # Инкрементируем счётчик сообщений
+    try:
+        from app.services.appwrite_service import appwrite_service as _as
+        await _as.increment_user_stat(uid, "messages_count")
+    except Exception as e:
+        print(f"Failed to increment messages_count: {e}")
     
     logger.info(f"Response: {len(response_text)} chars")
     

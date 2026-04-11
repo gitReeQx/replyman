@@ -120,12 +120,17 @@ a:hover {
 .sidebar-logo .logo-icon {
     width: 45px;
     height: 45px;
-    background: var(--gradient-primary);
-    border-radius: var(--border-radius-sm);
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 1.5rem;
+    overflow: hidden;
+}
+
+.sidebar-logo .logo-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
 }
 
 .sidebar-logo h1 {
@@ -467,8 +472,8 @@ textarea.form-input {
 .chat-container {
     display: flex;
     flex-direction: column;
-    height: calc(100vh - 180px);
-    min-height: 500px;
+    height: calc(100vh - 340px);
+    min-height: 350px;
 }
 
 .chat-messages {
@@ -507,21 +512,28 @@ textarea.form-input {
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    background: var(--gradient-primary);
     display: flex;
     align-items: center;
     justify-content: center;
     color: #fff;
     font-size: 0.9rem;
     flex-shrink: 0;
+    overflow: hidden;
+}
+
+.message-avatar img {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
 }
 
 .message.user .message-avatar {
-    background: var(--gradient-secondary);
+    background: var(--bg-primary);
+    border: 1px solid rgba(124, 58, 237, 0.2);
 }
 
 .message-content {
-    padding: 16px 20px;
+    padding: 16px 30px;
     border-radius: var(--border-radius-sm);
     background: var(--bg-primary);
 }
@@ -533,13 +545,69 @@ textarea.form-input {
 
 .message-text {
     line-height: 1.5;
-    white-space: pre-wrap;
     word-wrap: break-word;
 }
 
 .message-text p {
-    margin: 0;
+    margin: 0 0 4px 0;
     color: inherit;
+}
+
+.message-text p:last-child {
+    margin-bottom: 0;
+}
+
+.message-text pre {
+    background: #5d4b60;
+    color: #f3f3f3;
+    padding: 12px 16px;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-family: 'Courier New', monospace;
+    font-size: 1em;
+    margin: 12px 0;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.message-text code {
+    background: #f0f0f0;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 0.9em;
+}
+
+.message-text pre code {
+    background: transparent;
+    padding: 0;
+}
+
+/* Кнопка копирования */
+.copy-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: #ffffff;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: inherit;
+    color: #24292e;
+    transition: 0.2s;
+}
+
+.copy-btn:hover {
+    background: #e9ecef;
+    border-color: #afb8c1;
+}
+
+.copy-btn.copied {
+    background: #2cbe4e;
+    color: white;
+    border-color: #2cbe4e;
 }
 
 .chat-input-area {
@@ -715,13 +783,18 @@ textarea.form-input {
 .auth-logo .logo-icon {
     width: 70px;
     height: 70px;
-    background: var(--gradient-primary);
-    border-radius: var(--border-radius);
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 2rem;
     margin: 0 auto 15px;
+    overflow: hidden;
+}
+
+.auth-logo .logo-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
 }
 
 .auth-logo h1 {

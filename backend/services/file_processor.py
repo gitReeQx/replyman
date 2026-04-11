@@ -198,10 +198,10 @@ class FileProcessor:
     # ========================================
 
     async def _process_doc(self, content: bytes) -> Dict:
-        """Извлечь текст из DOC через antiword"""
+        """Извлечь текст из DOC: пробуем DOCX → antiword → LibreOffice → textract"""
         original_size = len(content)
 
-        # Сначала пробуем прочитать как DOCX (некоторые .doc на самом деле DOCX)
+        # Шаг 1: Пробуем прочитать как DOCX (некоторые .doc на самом деле DOCX)
         try:
             result = self._process_docx(content)
             if result.get("success"):
@@ -209,40 +209,58 @@ class FileProcessor:
                 result["format"] = "doc"
                 return result
         except Exception:
-            pass  # Не DOCX, продолжаем через antiword
+            pass  # Не DOCX, продолжаем
 
-        # Извлечение текста через antiword
+        # Шаг 2: Пробуем antiword (быстрый, но не всегда установлен)
+        antiword_result = await self._try_antiword(content, original_size)
+        if antiword_result:
+            return antiword_result
+
+        # Шаг 3: Пробуем LibreOffice (надёжный, но медленный)
+        libreoffice_result = await self._try_libreoffice_doc(content, original_size)
+        if libreoffice_result:
+            return libreoffice_result
+
+        # Шаг 4: Пробуем textract (Python-библиотека)
+        textract_result = self._try_textract(content, original_size)
+        if textract_result:
+            return textract_result
+
+        return {
+            "success": False,
+            "error": "Не удалось прочитать DOC файл. Установите antiword (apt install antiword) или LibreOffice (apt install libreoffice).",
+            "content": ""
+        }
+
+    async def _try_antiword(self, content: bytes, original_size: int) -> Optional[Dict]:
+        """Попытка извлечь текст через antiword"""
         try:
             with tempfile.NamedTemporaryFile(suffix=".doc", delete=False) as tmp:
                 tmp.write(content)
                 tmp_path = tmp.name
 
             try:
+                antiword_bin = "/usr/bin/antiword"
+                if not os.path.exists(antiword_bin):
+                    antiword_bin = "antiword"  # fallback
+
                 result = subprocess.run(
-                    ["antiword", tmp_path],
+                    [antiword_bin, tmp_path],
                     capture_output=True,
                     timeout=30
                 )
 
                 if result.returncode != 0:
-                    stderr = result.stderr.decode(errors='ignore').strip()
-                    logger.error(f"antiword failed: {stderr}")
-                    return {
-                        "success": False,
-                        "error": f"antiword не смог прочитать файл: {stderr or 'неизвестная ошибка'}",
-                        "content": ""
-                    }
+                    logger.warning(f"antiword failed: {result.stderr.decode(errors='ignore').strip()}")
+                    return None
 
                 text = result.stdout.decode('utf-8', errors='ignore')
                 cleaned = self._clean_text(text)
 
                 if not cleaned.strip():
-                    return {
-                        "success": False,
-                        "error": "Файл DOC пуст или не содержит текста",
-                        "content": ""
-                    }
+                    return None
 
+                logger.info(f"DOC extracted via antiword: {len(cleaned)} chars")
                 return {
                     "success": True,
                     "content": cleaned,
@@ -258,25 +276,122 @@ class FileProcessor:
                 os.unlink(tmp_path)
 
         except FileNotFoundError:
-            logger.error("antiword не найден в системе")
-            return {
-                "success": False,
-                "error": "antiword не установлен. Установите: apt install antiword",
-                "content": ""
-            }
+            logger.info("antiword не найден в системе, пробуем другие методы")
+            return None
         except subprocess.TimeoutExpired:
-            return {
-                "success": False,
-                "error": "Таймаут чтения DOC файла (превышено 30 секунд)",
-                "content": ""
-            }
+            logger.warning("antiword таймаут")
+            return None
         except Exception as e:
-            logger.error(f"DOC processing error: {e}")
+            logger.warning(f"antiword error: {e}")
+            return None
+
+    async def _try_libreoffice_doc(self, content: bytes, original_size: int) -> Optional[Dict]:
+        """Попытка извлечь текст через LibreOffice (конвертация в txt)"""
+        tmp_path = None
+        tmp_dir = None
+        try:
+            with tempfile.NamedTemporaryFile(suffix=".doc", delete=False) as tmp:
+                tmp.write(content)
+                tmp_path = tmp.name
+
+            tmp_dir = tempfile.mkdtemp(prefix="replyman_doc_")
+
+            # Конвертируем в txt
+            result = subprocess.run(
+                ["libreoffice", "--headless", "--convert-to", "txt:Text", "--outdir", tmp_dir, tmp_path],
+                capture_output=True,
+                timeout=60
+            )
+
+            if result.returncode != 0:
+                logger.warning(f"LibreOffice conversion failed: {result.stderr.decode(errors='ignore').strip()}")
+                return None
+
+            # Ищем созданный .txt файл
+            txt_files = [f for f in os.listdir(tmp_dir) if f.endswith('.txt')]
+            if not txt_files:
+                logger.warning("LibreOffice не создал txt файл")
+                return None
+
+            txt_path = os.path.join(tmp_dir, txt_files[0])
+            with open(txt_path, 'r', encoding='utf-8', errors='ignore') as f:
+                text = f.read()
+
+            cleaned = self._clean_text(text)
+
+            if not cleaned.strip():
+                return None
+
+            logger.info(f"DOC extracted via LibreOffice: {len(cleaned)} chars")
             return {
-                "success": False,
-                "error": f"Ошибка чтения DOC: {e}",
-                "content": ""
+                "success": True,
+                "content": cleaned,
+                "conversations": [],
+                "format": "doc",
+                "stats": {
+                    "original_size": original_size,
+                    "optimized_size": len(cleaned),
+                    "compression_ratio": round((1 - len(cleaned) / max(original_size, 1)) * 100, 1)
+                }
             }
+
+        except FileNotFoundError:
+            logger.info("LibreOffice не найден в системе")
+            return None
+        except subprocess.TimeoutExpired:
+            logger.warning("LibreOffice таймаут (60 секунд)")
+            return None
+        except Exception as e:
+            logger.warning(f"LibreOffice DOC error: {e}")
+            return None
+        finally:
+            # Удаляем временные файлы
+            try:
+                if tmp_path and os.path.exists(tmp_path):
+                    os.unlink(tmp_path)
+                if tmp_dir and os.path.exists(tmp_dir):
+                    import shutil
+                    shutil.rmtree(tmp_dir)
+            except Exception:
+                pass
+
+    def _try_textract(self, content: bytes, original_size: int) -> Optional[Dict]:
+        """Попытка извлечь текст через textract (Python-библиотека)"""
+        try:
+            import textract
+
+            with tempfile.NamedTemporaryFile(suffix=".doc", delete=False) as tmp:
+                tmp.write(content)
+                tmp_path = tmp.name
+
+            try:
+                text = textract.process(tmp_path).decode('utf-8', errors='ignore')
+                cleaned = self._clean_text(text)
+
+                if not cleaned.strip():
+                    return None
+
+                logger.info(f"DOC extracted via textract: {len(cleaned)} chars")
+                return {
+                    "success": True,
+                    "content": cleaned,
+                    "conversations": [],
+                    "format": "doc",
+                    "stats": {
+                        "original_size": original_size,
+                        "optimized_size": len(cleaned),
+                        "compression_ratio": round((1 - len(cleaned) / max(original_size, 1)) * 100, 1)
+                    }
+                }
+            finally:
+                os.unlink(tmp_path)
+
+        except ImportError:
+            logger.info("textract не установлен")
+            return None
+        except Exception as e:
+            logger.warning(f"textract error: {e}")
+            return None
 
     # ========================================
     # TXT

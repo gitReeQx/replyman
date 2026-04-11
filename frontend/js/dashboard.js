@@ -1,6 +1,6 @@
 // ========================================
 // ReplyMan AI Assistant - Dashboard Logic
-// Исправлено: правильное получение контекста
+// Поддержка Markdown (блоки кода, жирный текст и т.д.)
 // ========================================
 
 let currentSessionId = null;
@@ -109,7 +109,7 @@ async function sendMessage() {
     sendBtn.disabled = true;
     
     // Add user message to UI
-    addMessage(message, 'user');
+    await addMessage(message, 'user');
     chatInput.value = '';
     chatInput.style.height = 'auto';
     
@@ -124,17 +124,17 @@ async function sendMessage() {
         hideTypingIndicator();
         
         if (result.success) {
-            addMessage(result.response, 'assistant');
+            await addMessage(result.response, 'assistant');
             currentSessionId = result.session_id;
             messageCount++;
             updateStats();
         } else {
-            addMessage('Ошибка при получении ответа. Попробуйте ещё раз.', 'assistant');
+            await addMessage('Ошибка при получении ответа. Попробуйте ещё раз.', 'assistant');
         }
     } catch (error) {
         console.error('Send message error:', error);
         hideTypingIndicator();
-        addMessage('Ошибка соединения. Проверьте подключение.', 'assistant');
+        await addMessage('Ошибка соединения. Проверьте подключение.', 'assistant');
     } finally {
         chatInput.disabled = false;
         sendBtn.disabled = false;
@@ -142,18 +142,59 @@ async function sendMessage() {
     }
 }
 
-function addMessage(content, role) {
+// ========== НОВЫЕ ФУНКЦИИ ДЛЯ ПОДДЕРЖКИ MARKDOWN ==========
+
+/**
+ * Экранирует HTML-спецсимволы (для безопасности)
+ */
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+/**
+ * Форматирует сообщение:
+ * - для ассистента: рендерит Markdown через marked.js
+ * - для пользователя: экранирует HTML и заменяет переносы строк
+ */
+async function formatMessage(content, isAssistant = false) {
+    if (isAssistant) {
+        try {
+            // Проверяем, что marked загружен
+            if (typeof marked !== 'undefined' && typeof marked.parse === 'function') {
+                const html = await marked.parse(content);
+                return html;
+            } else {
+                console.warn('marked.js не загружен, используется базовое форматирование');
+                return escapeHtml(content).replace(/\n/g, '<br>');
+            }
+        } catch (e) {
+            console.error('Markdown parse error:', e);
+            return escapeHtml(content).replace(/\n/g, '<br>');
+        }
+    } else {
+        // Сообщения пользователя показываем как обычный текст (безопасно)
+        return escapeHtml(content).replace(/\n/g, '<br>');
+    }
+}
+
+/**
+ * Добавляет сообщение в чат с поддержкой Markdown для ассистента
+ */
+async function addMessage(content, role) {
     const messagesContainer = document.getElementById('chatMessages');
     
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${role}`;
     
-    const avatar = role === 'user' ? '👤' : '🤖';
+    const avatar = role === 'user' ? '👤' : '<img src="robot_avatar.png" alt="AI">';
+    const formattedContent = await formatMessage(content, role === 'assistant');
     
     messageDiv.innerHTML = `
         <div class="message-avatar">${avatar}</div>
         <div class="message-content">
-            <div class="message-text">${formatMessage(content)}</div>
+            <div class="message-text">${formattedContent}</div>
         </div>
     `;
     
@@ -161,14 +202,49 @@ function addMessage(content, role) {
     
     // Scroll to bottom
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    if (role === 'assistant') {
+        addCopyButtonsToCodeBlocks();
+    }
 }
 
-function formatMessage(content) {
-    return content
-        .replace(/\n/g, '<br>')
-        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-        .replace(/\*(.*?)\*/g, '<em>$1</em>');
+function addCopyButtonsToCodeBlocks() {
+    const messageTexts = document.querySelectorAll('.message.assistant .message-text');
+    messageTexts.forEach(container => {
+        const pres = container.querySelectorAll('pre');
+        pres.forEach(pre => {
+            // Если кнопка уже есть – пропускаем
+            if (pre.querySelector('.copy-btn')) return;
+            
+            const btn = document.createElement('button');
+            btn.className = 'copy-btn';
+            btn.textContent = 'Копировать';
+            pre.style.position = 'relative';
+            pre.appendChild(btn);
+            
+            btn.addEventListener('click', async () => {
+                const code = pre.querySelector('code');
+                const text = code ? code.innerText : pre.innerText;
+                try {
+                    await navigator.clipboard.writeText(text);
+                    btn.textContent = 'Скопировано!';
+                    btn.classList.add('copied');
+                    setTimeout(() => {
+                        btn.textContent = 'Копировать';
+                        btn.classList.remove('copied');
+                    }, 2000);
+                } catch (err) {
+                    console.error('Ошибка копирования:', err);
+                    btn.textContent = 'Ошибка';
+                    setTimeout(() => {
+                        btn.textContent = 'Копировать';
+                    }, 1500);
+                }
+            });
+        });
+    });
 }
+
+// ========== ОСТАЛЬНЫЕ ФУНКЦИИ БЕЗ ИЗМЕНЕНИЙ ==========
 
 function showTypingIndicator() {
     const messagesContainer = document.getElementById('chatMessages');
@@ -178,7 +254,7 @@ function showTypingIndicator() {
     typingDiv.id = 'typingIndicator';
     
     typingDiv.innerHTML = `
-        <div class="message-avatar">🤖</div>
+        <div class="message-avatar"><img src="robot_avatar.png" alt="AI"></div>
         <div class="typing-indicator">
             <div class="typing-dot"></div>
             <div class="typing-dot"></div>
@@ -199,28 +275,28 @@ function hideTypingIndicator() {
 
 async function loadStats() {
     try {
-        // Load knowledge stats
-        const statsResult = await api.request('/files/stats');
+        // Получаем все счётчики с сервера (Appwrite)
+        const statsResult = await api.request('/auth/stats');
         if (statsResult.success) {
-            document.getElementById('filesCount').textContent = 
-                statsResult.knowledge_size > 0 ? '✓' : '0';
+            document.getElementById('filesCount').textContent = statsResult.files_count || 0;
+            document.getElementById('messagesCount').textContent = statsResult.messages_count || 0;
+            document.getElementById('trainingsCount').textContent = statsResult.trainings_count || 0;
+            messageCount = statsResult.messages_count || 0;
+        } else {
+            // Fallback: загрузка через /files/stats
+            const filesResult = await api.request('/files/stats');
+            if (filesResult.success) {
+                document.getElementById('filesCount').textContent = filesResult.files_count || 0;
+            }
         }
-        
-        // Load message count
-        const savedCount = localStorage.getItem('messageCount') || 0;
-        messageCount = parseInt(savedCount);
-        document.getElementById('messagesCount').textContent = messageCount;
-        
-        // Trainings count
-        const trainingsCount = localStorage.getItem('trainingsCount') || 0;
-        document.getElementById('trainingsCount').textContent = trainingsCount;
-        
     } catch (error) {
         console.error('Failed to load stats:', error);
     }
 }
 
 function updateStats() {
+    // Обновляем счётчик сообщений локально + на сервере
+    messageCount++;
     document.getElementById('messagesCount').textContent = messageCount;
-    localStorage.setItem('messageCount', messageCount);
+    // Счётчик инкрементируется на бэкенде при отправке сообщения
 }

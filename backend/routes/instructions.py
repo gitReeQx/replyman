@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Cookie
+from fastapi import APIRouter, Cookie, Header
 from typing import Optional
 from app.models.schemas import InstructionsUpdate, InstructionsResponse
 from app.services.appwrite_service import appwrite_service
@@ -8,15 +8,31 @@ router = APIRouter()
 # Local storage for instructions (for development)
 LOCAL_INSTRUCTIONS = {}
 
-def get_user_id_from_session(session_token: Optional[str]) -> str:
-    """Get user ID from session or return default"""
-    return "dev_user"
+# Sessions from auth module
+try:
+    from app.routes.auth import sessions
+except ImportError:
+    sessions = {}
+
+def get_user_id_from_session(session_token: Optional[str] = None, authorization: Optional[str] = None) -> Optional[str]:
+    """Get user ID from session (cookie or Authorization header)"""
+    token = None
+    if authorization and authorization.startswith("Bearer "):
+        token = authorization[7:]
+    elif session_token:
+        token = session_token
+
+    if token and token in sessions:
+        return sessions[token].get("user_id")
+    return None
 
 @router.get("", response_model=InstructionsResponse)
-async def get_instructions(session_token: Optional[str] = Cookie(None)):
+async def get_instructions(session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
     """Get user's custom instructions"""
     
-    user_id = get_user_id_from_session(session_token)
+    user_id = get_user_id_from_session(session_token, authorization)
+    if not user_id:
+        return InstructionsResponse(success=False, message="Не авторизован", instructions="")
     
     # Try Appwrite first
     try:
@@ -42,11 +58,14 @@ async def get_instructions(session_token: Optional[str] = Cookie(None)):
 @router.post("", response_model=InstructionsResponse)
 async def update_instructions(
     request: InstructionsUpdate,
-    session_token: Optional[str] = Cookie(None)
+    session_token: Optional[str] = Cookie(None),
+    authorization: Optional[str] = Header(None)
 ):
     """Update user's custom instructions"""
     
-    user_id = get_user_id_from_session(session_token)
+    user_id = get_user_id_from_session(session_token, authorization)
+    if not user_id:
+        return InstructionsResponse(success=False, message="Не авторизован", instructions="")
     
     # Try Appwrite first
     try:
@@ -70,10 +89,12 @@ async def update_instructions(
     )
 
 @router.delete("")
-async def reset_instructions(session_token: Optional[str] = Cookie(None)):
+async def reset_instructions(session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)):
     """Reset user's custom instructions"""
     
-    user_id = get_user_id_from_session(session_token)
+    user_id = get_user_id_from_session(session_token, authorization)
+    if not user_id:
+        return {"success": False, "message": "Не авторизован"}
     
     # Try Appwrite first
     try:

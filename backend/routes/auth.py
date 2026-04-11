@@ -253,6 +253,39 @@ async def get_current_user(
     )
 
 
+@router.get("/stats")
+async def get_user_stats(
+    session_token: Optional[str] = Cookie(None),
+    authorization: Optional[str] = Header(None)
+):
+    """Get user stats: files_count, messages_count, trainings_count, subscription_type"""
+    
+    token = get_session_token(session_token, authorization)
+    
+    if not token or token not in sessions:
+        return {"success": False, "message": "Не авторизован"}
+    
+    session = sessions[token]
+    user_id = session.get("user_id", "")
+    
+    if not user_id:
+        return {"success": False, "message": "User ID not found"}
+    
+    try:
+        from app.services.appwrite_service import appwrite_service
+        stats = await appwrite_service.get_user_stats(user_id)
+        return stats
+    except Exception as e:
+        return {
+            "success": False,
+            "message": str(e),
+            "files_count": 0,
+            "messages_count": 0,
+            "trainings_count": 0,
+            "subscription_type": "старт"
+        }
+
+
 @router.get("/verify")
 async def verify_session(
     session_token: Optional[str] = Cookie(None),
