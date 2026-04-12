@@ -1,10 +1,12 @@
 // ========================================
 // ReplyMan AI Assistant - Training Page Logic
+// + Проверка доступа к тренажёру по тарифу
 // ========================================
 
 let currentTrainingSessionId = null;
 let messageCounter = 0;
 let currentScenario = 'general';
+let trainingAccessAllowed = false;
 
 document.addEventListener('DOMContentLoaded', () => {
     initTrainingPage();
@@ -14,12 +16,75 @@ async function initTrainingPage() {
     // Check authentication
     await checkAuth();
     
+    // Check training access (Бизнес tariff only)
+    await checkTrainingAccess();
+    
     // Initialize components
     initSidebar();
     initTraining();
     
     // Check for active training session (persisted in Appwrite)
-    await restoreActiveTraining();
+    // Only if access is allowed
+    if (trainingAccessAllowed) {
+        await restoreActiveTraining();
+    }
+}
+
+async function checkTrainingAccess() {
+    try {
+        const result = await api.getSubscription();
+        if (result.success && result.subscription) {
+            // Проверяем подтверждение email
+            if (!result.user.email_verified) {
+                window.location.href = 'index.html';
+                return;
+            }
+            const sub = result.subscription;
+            const tariffId = sub.subscription_type || 'бесплатный';
+            const isActive = sub.subscription_status === 'active';
+            
+            if (tariffId === 'бизнес' && isActive) {
+                trainingAccessAllowed = true;
+                return;
+            }
+        }
+        // Доступ запрещён — показываем заглушку
+        trainingAccessAllowed = false;
+        showTrainingLocked();
+    } catch (error) {
+        console.error('Failed to check training access:', error);
+        // При ошибке — показываем заглушку (безопасный вариант)
+        trainingAccessAllowed = false;
+        showTrainingLocked();
+    }
+}
+
+function showTrainingLocked() {
+    const mainContent = document.querySelector('.main-content');
+    // Скрываем весь контент тренировки
+    const children = mainContent.children;
+    for (let i = 0; i < children.length; i++) {
+        children[i].style.display = 'none';
+    }
+    
+    // Показываем заглушку
+    const lockDiv = document.createElement('div');
+    lockDiv.className = 'card';
+    lockDiv.id = 'trainingLocked';
+    lockDiv.innerHTML = `
+        <div style="text-align: center; padding: 60px 30px;">
+            <div style="font-size: 4rem; margin-bottom: 20px;">🔒</div>
+            <h3 style="margin-bottom: 15px; color: var(--text-primary);">Тренажёр доступен на тарифе «Бизнес»</h3>
+            <p style="color: var(--text-secondary); margin-bottom: 30px; max-width: 400px; margin-left: auto; margin-right: auto; line-height: 1.6;">
+                Тренажёр общения с ИИ-клиентом позволяет практиковать навыки продаж и поддержки в безопасной среде. 
+                Оформите тариф «Бизнес», чтобы получить доступ к тренажёру и неограниченное количество запросов.
+            </p>
+            <a href="billing.html" class="btn btn-primary btn-lg" style="display: inline-block; text-decoration: none;">
+                💳 Перейти к тарифам
+            </a>
+        </div>
+    `;
+    mainContent.appendChild(lockDiv);
 }
 
 async function checkAuth() {

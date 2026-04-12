@@ -21,6 +21,11 @@ async function checkAuth() {
     try {
         const result = await api.getCurrentUser();
         if (result.success && result.user) {
+            // Проверяем подтверждение email
+            if (!result.user.email_verified) {
+                window.location.href = 'index.html';
+                return;
+            }
             document.getElementById('userName').textContent = result.user.name || 'Пользователь';
             document.getElementById('userEmail').textContent = result.user.email;
             document.getElementById('userAvatar').textContent = (result.user.name || result.user.email)[0].toUpperCase();
@@ -275,18 +280,25 @@ function hideTypingIndicator() {
 
 async function loadStats() {
     try {
-        // Получаем все счётчики с сервера (Appwrite)
-        const statsResult = await api.request('/auth/stats');
-        if (statsResult.success) {
-            document.getElementById('filesCount').textContent = statsResult.files_count || 0;
-            document.getElementById('messagesCount').textContent = statsResult.messages_count || 0;
-            document.getElementById('trainingsCount').textContent = statsResult.trainings_count || 0;
-            messageCount = statsResult.messages_count || 0;
-        } else {
-            // Fallback: загрузка через /files/stats
-            const filesResult = await api.request('/files/stats');
-            if (filesResult.success) {
-                document.getElementById('filesCount').textContent = filesResult.files_count || 0;
+        const result = await api.getSubscription();
+        if (result.success && result.subscription) {
+            const sub = result.subscription;
+            const count = sub.daily_requests_count || 0;
+            const limit = sub.daily_requests_limit; // null = unlimited
+            
+            document.getElementById('dailyCount').textContent = count;
+            
+            if (limit === null || limit === undefined) {
+                // Unlimited (Бизнес тариф)
+                document.getElementById('dailyLimit').textContent = '∞';
+                document.getElementById('requestCounterFill').style.width = '0%';
+            } else {
+                document.getElementById('dailyLimit').textContent = limit;
+                const pct = Math.min((count / limit) * 100, 100);
+                const fill = document.getElementById('requestCounterFill');
+                fill.style.width = pct + '%';
+                if (pct >= 80) fill.classList.add('warning');
+                else fill.classList.remove('warning');
             }
         }
     } catch (error) {
@@ -295,8 +307,19 @@ async function loadStats() {
 }
 
 function updateStats() {
-    // Обновляем счётчик сообщений локально + на сервере
-    messageCount++;
-    document.getElementById('messagesCount').textContent = messageCount;
-    // Счётчик инкрементируется на бэкенде при отправке сообщения
+    // Обновляем счётчик запросов
+    const countEl = document.getElementById('dailyCount');
+    const limitEl = document.getElementById('dailyLimit');
+    const fillEl = document.getElementById('requestCounterFill');
+    
+    const currentCount = parseInt(countEl.textContent) + 1;
+    countEl.textContent = currentCount;
+    
+    const limitText = limitEl.textContent;
+    if (limitText !== '∞') {
+        const limit = parseInt(limitText);
+        const pct = Math.min((currentCount / limit) * 100, 100);
+        fillEl.style.width = pct + '%';
+        if (pct >= 80) fillEl.classList.add('warning');
+    }
 }

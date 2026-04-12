@@ -22,6 +22,11 @@ async function checkAuth() {
     try {
         const result = await api.getCurrentUser();
         if (result.success && result.user) {
+            // Проверяем подтверждение email
+            if (!result.user.email_verified) {
+                window.location.href = 'index.html';
+                return;
+            }
             document.getElementById('userName').textContent = result.user.name || 'Пользователь';
             document.getElementById('userEmail').textContent = result.user.email;
             document.getElementById('userAvatar').textContent = (result.user.name || result.user.email)[0].toUpperCase();
@@ -435,9 +440,13 @@ async function loadStats() {
         const result = await api.request('/files/stats');
         if (result.success) {
             const sizeEl = document.getElementById('knSize');
-            const tokensEl = document.getElementById('knTokens');
             if (sizeEl) sizeEl.textContent = formatNumber(result.knowledge_size || 0);
-            if (tokensEl) tokensEl.textContent = formatNumber(result.knowledge_tokens || 0);
+            
+            // Update file count badge in page header
+            const badgeEl = document.getElementById('filesCountBadge');
+            if (badgeEl && result.file_names) {
+                badgeEl.textContent = result.file_names.length;
+            }
         }
     } catch (error) {
         console.error('Stats error:', error);

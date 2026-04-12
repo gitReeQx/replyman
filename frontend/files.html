@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ru">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,31 +11,152 @@
     <link rel="stylesheet" href="css/styles.css">
     <link rel="icon" type="image/png" href="logo_rm.png">
     <style>
-        .progress-container{display:none;margin-top:20px;padding:20px;background:var(--bg-secondary);border-radius:8px}
-        .progress-container.active{display:block}
-        .progress-bar{height:8px;background:var(--bg-primary);border-radius:4px;overflow:hidden;margin:10px 0}
-        .progress-fill{height:100%;background:var(--gradient-primary);transition:width 0.5s ease;border-radius:4px}
-        .progress-fill.indeterminate{width:30%!important;animation:indeterminate 1.5s ease-in-out infinite}
-        @keyframes indeterminate{0%{margin-left:-30%}50%{margin-left:30%}100%{margin-left:-30%}}
-        .progress-stage{margin-top:15px;font-size:14px}
-        .progress-stage .name{font-weight:600;color:var(--text-primary)}
-        .progress-stage .detail{color:var(--text-secondary);margin-top:5px}
-        .stats-row{display:flex;gap:15px;margin:15px 0}
-        .stat-item{flex:1;padding:15px;background:var(--bg-primary);border-radius:8px;text-align:center}
-        .stat-item .value{font-size:24px;font-weight:700;color:var(--primary-color)}
-        .stat-item .label{font-size:12px;color:var(--text-secondary);margin-top:5px}
-        .files-list-container{margin-top:15px;border-top:1px solid rgba(124,58,237,0.1);padding-top:15px}
-        .files-list-container h4{font-size:0.95rem;font-weight:600;color:var(--text-primary);margin-bottom:10px}
-        .files-list{display:flex;flex-direction:column;gap:6px;max-height:200px;overflow-y:auto}
-        .file-entry{display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--bg-primary);border-radius:8px;font-size:0.85rem;color:var(--text-secondary)}
-        .file-entry .file-dot{width:6px;height:6px;border-radius:50%;background:var(--primary-color);flex-shrink:0}
-        .file-entry .file-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-        .files-list-empty{font-size:0.85rem;color:var(--text-secondary);opacity:0.7;padding:10px 0}
+        .progress-container {
+            display: none;
+            margin-top: 20px;
+            padding: 20px;
+            background: var(--bg-secondary);
+            border-radius: 8px
+        }
+
+        .progress-container.active {
+            display: block
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: var(--bg-primary);
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 10px 0
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--gradient-primary);
+            transition: width 0.5s ease;
+            border-radius: 4px
+        }
+
+        .progress-fill.indeterminate {
+            width: 30% !important;
+            animation: indeterminate 1.5s ease-in-out infinite
+        }
+
+        @keyframes indeterminate {
+            0% {
+                margin-left: -30%
+            }
+
+            50% {
+                margin-left: 30%
+            }
+
+            100% {
+                margin-left: -30%
+            }
+        }
+
+        .progress-stage {
+            margin-top: 15px;
+            font-size: 14px
+        }
+
+        .progress-stage .name {
+            font-weight: 600;
+            color: var(--text-primary)
+        }
+
+        .progress-stage .detail {
+            color: var(--text-secondary);
+            margin-top: 5px
+        }
+
+        .stats-row {
+            display: flex;
+            gap: 15px;
+            margin: 15px 0
+        }
+
+        .stat-item {
+            flex: 1;
+            padding: 15px;
+            background: var(--bg-primary);
+            border-radius: 8px;
+            text-align: center
+        }
+
+        .stat-item .value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary-color)
+        }
+
+        .stat-item .label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 5px
+        }
+
+        .files-list-container {
+            margin-top: 15px;
+            border-top: 1px solid rgba(124, 58, 237, 0.1);
+            padding-top: 15px
+        }
+
+        .files-list-container h4 {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 10px
+        }
+
+        .files-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            max-height: 200px;
+            overflow-y: auto
+        }
+
+        .file-entry {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            background: var(--bg-primary);
+            border-radius: 8px;
+            font-size: 0.85rem;
+            color: var(--text-secondary)
+        }
+
+        .file-entry .file-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            flex-shrink: 0
+        }
+
+        .file-entry .file-name {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap
+        }
+
+        .files-list-empty {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            opacity: 0.7;
+            padding: 10px 0
+        }
     </style>
 </head>
+
 <body>
     <button class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
-    
+
     <div class="app-layout">
         <!-- Sidebar -->
         <aside class="sidebar" id="sidebar">
@@ -42,7 +164,7 @@
                 <div class="logo-icon"><img src="logo_rm.png" alt="ReplyMan"></div>
                 <h1>ReplyMan</h1>
             </div>
-            
+
             <nav class="sidebar-nav">
                 <a href="dashboard.html" class="nav-item" data-page="chat">
                     <span>💬</span>
@@ -60,8 +182,12 @@
                     <span>⚙️</span>
                     <span>Инструкции ИИ</span>
                 </a>
+                <a href="billing.html" class="nav-item" data-page="billing">
+                    <span>💳</span>
+                    <span>Оплата</span>
+                </a>
             </nav>
-            
+
             <div class="sidebar-footer">
                 <div class="user-info">
                     <div class="user-avatar" id="userAvatar">U</div>
@@ -70,24 +196,29 @@
                         <div class="user-email" id="userEmail">user@email.com</div>
                     </div>
                 </div>
-                <button class="nav-item" id="logoutBtn" style="margin-top: 10px; color: rgba(255,255,255,0.7);">
+                <button class="nav-item" id="logoutBtn"
+                    style="margin-top: 10px; color: rgba(255,255,255,0.6); background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);">
                     <span>🚪</span>
                     <span>Выйти</span>
                 </button>
             </div>
         </aside>
-        
+
         <!-- Main Content -->
         <main class="main-content">
             <div class="page-header">
-                <h2>📁 Файлы переписки</h2>
+                <h2>📁 Загруженные файлы <span id="filesCountBadge"
+                        style="font-size:0.7em;background:var(--primary-color);color:#fff;padding:2px 10px;border-radius:20px;vertical-align:middle;">0</span>
+                </h2>
                 <p>Загрузите историю — ИИ извлечёт важную информацию</p>
             </div>
-            
+
             <div id="alertContainer"></div>
-            
+
             <div class="card">
-                <div class="card-header"><h3>Загрузить файл</h3></div>
+                <div class="card-header">
+                    <h3>Загрузить файл</h3>
+                </div>
                 <div class="file-upload-area" id="fileUploadArea">
                     <div class="file-upload-icon">📤</div>
                     <div class="file-upload-text">Перетащите файл или нажмите</div>
@@ -95,7 +226,9 @@
                     <input type="file" id="fileInput" accept=".txt,.json,.html,.htm,.pdf,.docx,.doc" hidden>
                 </div>
                 <div class="progress-container" id="progressBox">
-                    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
                     <div style="display:flex;justify-content:space-between;font-size:12px">
                         <span id="progressPct">0%</span>
                         <span id="progressText">Загрузка...</span>
@@ -106,7 +239,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <div class="card" style="margin-top:20px">
                 <div class="card-header">
                     <h3>📊 База знаний</h3>
@@ -115,31 +248,42 @@
                 <div class="stats-row">
                     <div class="stat-item">
                         <div class="value" id="knSize">0</div>
-                        <div class="label">символов</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="value" id="knTokens">0</div>
-                        <div class="label">токенов</div>
+                        <div class="label">из 100 000 символов</div>
                     </div>
                 </div>
-                
+
                 <!-- Список загруженных файлов -->
                 <div class="files-list-container" id="filesListContainer">
-                    <h4>📄 Загруженные файлы</h4>
                     <div class="files-list" id="filesList">
                         <div class="files-list-empty">Файлы ещё не загружены</div>
                     </div>
                 </div>
-                
+
                 <div style="margin-top:15px">
                     <button class="btn btn-danger btn-sm" id="clearKnowledge">🗑️ Очистить базу знаний</button>
                 </div>
             </div>
         </main>
     </div>
-    
+
     <script src="js/config.js"></script>
     <script src="js/api.js"></script>
     <script src="js/files.js"></script>
+    <!-- Yandex.Metrika counter -->
+    <script type="text/javascript">
+        (function (m, e, t, r, i, k, a) {
+            m[i] = m[i] || function () { (m[i].a = m[i].a || []).push(arguments) };
+            m[i].l = 1 * new Date();
+            for (var j = 0; j < document.scripts.length; j++) { if (document.scripts[j].src === r) { return; } }
+            k = e.createElement(t), a = e.getElementsByTagName(t)[0], k.async = 1, k.src = r, a.parentNode.insertBefore(k, a)
+        })(window, document, 'script', 'https://mc.yandex.ru/metrika/tag.js?id=108494912',
+            'ym');
+        ym(108494912, 'init', { ssr: true, webvisor: true, clickmap: true, ecommerce: "dataLayer", referrer: document.referrer, url: location.href, accurateTrackBounce: true, trackLinks: true });
+    </script>
+    <noscript>
+        <div><img src="https://mc.yandex.ru/watch/108494912" style="position:absolute; left:-9999px;" alt="" /></div>
+    </noscript>
+    <!-- /Yandex.Metrika counter -->
 </body>
+
 </html>

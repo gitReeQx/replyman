@@ -108,6 +108,24 @@ class APIClient {
         return this.request('/auth/verify');
     }
     
+    // Email verification endpoints
+    async sendVerificationEmail() {
+        return this.request('/auth/send-verification', {
+            method: 'POST'
+        });
+    }
+    
+    async confirmEmailVerification(userId, secret) {
+        return this.request('/auth/confirm-verification', {
+            method: 'POST',
+            body: JSON.stringify({ user_id: userId, secret: secret })
+        });
+    }
+    
+    async checkEmailVerification() {
+        return this.request('/auth/check-verification');
+    }
+    
     // Files endpoints
     async uploadFile(file, onProgress = null) {
         const formData = new FormData();
@@ -241,6 +259,30 @@ class APIClient {
         return this.request('/instructions', {
             method: 'DELETE'
         });
+    }
+    
+    // Payment / Subscription endpoints
+    async getTariffs() {
+        return this.request('/payments/tariffs');
+    }
+    
+    async getSubscription() {
+        return this.request('/payments/subscription');
+    }
+    
+    async createPayment(tariffId, period = 'monthly') {
+        return this.request('/payments/create', {
+            method: 'POST',
+            body: JSON.stringify({ tariff_id: tariffId, period: period })
+        });
+    }
+    
+    async getPaymentHistory() {
+        return this.request('/payments/history');
+    }
+    
+    async checkPaymentStatus(paymentId) {
+        return this.request(`/payments/check-payment?payment_id=${paymentId}`);
     }
 }
 

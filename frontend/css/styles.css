@@ -188,6 +188,12 @@ a:hover {
     border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+#logoutBtn:hover {
+    background: rgba(255, 80, 80, 0.15) !important;
+    color: #ff6b6b !important;
+    border-color: rgba(255, 80, 80, 0.3) !important;
+}
+
 .user-info {
     display: flex;
     align-items: center;
@@ -558,10 +564,11 @@ textarea.form-input {
 }
 
 .message-text pre {
-    background: #5d4b60;
-    color: #f3f3f3;
+    background: #f5e3eb;
+    color: #837777;
     padding: 12px 16px;
     border-radius: 8px;
+    border: #e5bfbf 1px solid;
     overflow-x: auto;
     font-family: 'Courier New', monospace;
     font-size: 1em;
@@ -1170,3 +1177,198 @@ textarea.form-input {
 .gap-10 { gap: 10px; }
 .gap-15 { gap: 15px; }
 .gap-20 { gap: 20px; }
+
+/* Request counter on dashboard */
+.request-counter {
+    padding: 12px 20px;
+    background: var(--bg-secondary);
+    border-radius: var(--border-radius);
+    margin-bottom: 20px;
+    border: 1px solid rgba(124, 58, 237, 0.1);
+}
+.request-counter-text {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+.request-counter-text strong {
+    color: var(--primary-color);
+}
+.request-counter-bar {
+    height: 4px;
+    background: var(--bg-primary);
+    border-radius: 2px;
+    margin-top: 8px;
+    overflow: hidden;
+}
+.request-counter-fill {
+    height: 100%;
+    background: var(--gradient-primary);
+    border-radius: 2px;
+    transition: width 0.3s ease;
+}
+.request-counter-fill.warning {
+    background: linear-gradient(135deg, #f59e0b, #ef4444);
+}
+
+/* ========================================
+   Email Verification Screen - Improved
+   ======================================== */
+
+/* Карточка верификации — базовые отступы */
+.verification-card {
+    padding: 40px 30px;
+}
+
+/* Логотип и заголовок */
+.verification-card .auth-logo {
+    margin-bottom: 24px;
+}
+
+.verification-subtitle {
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-top: 6px;
+    letter-spacing: -0.01em;
+}
+
+/* Иконка конверта */
+.verification-icon-circle {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: var(--gradient-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 24px;
+    color: #fff;
+    box-shadow: var(--shadow-md);
+}
+
+.verification-icon-circle svg {
+    width: 36px;
+    height: 36px;
+    stroke: white;
+    stroke-width: 1.8;
+}
+
+/* Информационный блок */
+.verification-info {
+    background: var(--bg-primary);
+    border-radius: var(--border-radius-sm);
+    padding: 24px 20px;
+    margin-bottom: 32px;
+}
+
+.verification-message {
+    font-size: 1rem;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+
+.verification-email {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    margin-bottom: 16px;
+    word-break: break-all;
+    line-height: 1.4;
+}
+
+.verification-hint {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin: 0;
+    padding-top: 8px;
+    border-top: 1px dashed rgba(124, 58, 237, 0.2);
+}
+
+/* Кнопки действий */
+.verification-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-bottom: 28px;
+}
+
+.verification-actions .btn {
+    padding: 16px 24px;
+    font-size: 1rem;
+    font-weight: 600;
+    border-radius: 60px; /* скруглённые кнопки */
+    transition: all 0.2s ease;
+}
+
+.verification-actions .btn-primary {
+    box-shadow: var(--shadow-md);
+}
+
+.verification-actions .btn-primary:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-lg);
+}
+
+.verification-actions .btn-outline {
+    border-width: 2px;
+}
+
+/* Кнопка "Выйти" */
+.auth-footer .btn-link {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    font-weight: 500;
+    text-decoration: none;
+    padding: 10px 20px;
+    border-radius: 40px;
+    transition: var(--transition);
+    display: inline-block;
+}
+
+.auth-footer .btn-link:hover {
+    color: var(--primary-color);
+    background: rgba(124, 58, 237, 0.05);
+    text-decoration: none;
+}
+
+/* Адаптация для мобильных */
+@media (max-width: 480px) {
+    .verification-card {
+        padding: 30px 20px;
+    }
+
+    .verification-icon-circle {
+        width: 64px;
+        height: 64px;
+    }
+
+    .verification-icon-circle svg {
+        width: 32px;
+        height: 32px;
+    }
+
+    .verification-email {
+        font-size: 1.1rem;
+    }
+
+    .verification-info {
+        padding: 20px 16px;
+    }
+
+    .verification-actions .btn {
+        padding: 14px 20px;
+    }
+}
+
+/* Состояние загрузки для кнопок верификации (опционально) */
+#checkVerificationBtn:disabled,
+#resendVerificationBtn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}

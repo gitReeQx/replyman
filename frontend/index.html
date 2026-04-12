@@ -12,7 +12,8 @@
 </head>
 <body>
     <div class="auth-container">
-        <div class="auth-card">
+        <!-- Auth Card (Login/Register) -->
+        <div class="auth-card" id="authCard">
             <div class="auth-logo">
                 <div class="logo-icon"><img src="logo_rm.png" alt="ReplyMan"></div>
                 <h1>ReplyMan</h1>
@@ -71,6 +72,45 @@
                 <p id="authSwitch">
                     Нет аккаунта? <a href="#" id="showRegister">Зарегистрироваться</a>
                 </p>
+            </div>
+        </div>
+
+        <!-- Email Verification Card -->
+        <div class="auth-card verification-card" id="verificationCard" style="display: none;">
+            <div class="auth-logo">
+                <div class="logo-icon"><img src="logo_rm.png" alt="ReplyMan"></div>
+                <h1>ReplyMan</h1>
+                <p class="verification-subtitle">Подтверждение email</p>
+            </div>
+            
+            <div id="verificationAlert"></div>
+            
+            <div class="verification-info">
+                <div class="verification-icon-circle">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                </div>
+                <p class="verification-message">
+                    Мы отправили письмо на адрес
+                </p>
+                <p class="verification-email" id="verificationEmail"></p>
+                <p class="verification-hint">
+                    Перейдите по ссылке из письма. Если письма нет — проверьте папку «Спам».
+                </p>
+            </div>
+            
+            <div class="verification-actions">
+                <button id="checkVerificationBtn" class="btn btn-primary" style="width: 100%;">
+                    Я подтвердил почту
+                </button>
+                <button id="resendVerificationBtn" class="btn btn-outline" style="width: 100%;">
+                    Отправить письмо повторно
+                </button>
+            </div>
+            
+            <div class="auth-footer">
+                <button id="verificationLogoutBtn" class="btn-link">
+                    Выйти и войти с другим аккаунтом
+                </button>
             </div>
         </div>
     </div>

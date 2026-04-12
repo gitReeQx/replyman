@@ -20,6 +20,11 @@ async function checkAuth() {
     try {
         const result = await api.getCurrentUser();
         if (result.success && result.user) {
+            // Проверяем подтверждение email
+            if (!result.user.email_verified) {
+                window.location.href = 'index.html';
+                return;
+            }
             document.getElementById('userName').textContent = result.user.name || 'Пользователь';
             document.getElementById('userEmail').textContent = result.user.email;
             document.getElementById('userAvatar').textContent = (result.user.name || result.user.email)[0].toUpperCase();
@@ -62,7 +67,6 @@ function initInstructionsEditor() {
     const charCounter = document.getElementById('charCounter');
     const saveBtn = document.getElementById('saveInstructions');
     const resetBtn = document.getElementById('resetInstructions');
-    const previewBtn = document.getElementById('previewPrompt');
     
     // Character counter
     textarea.addEventListener('input', () => {
@@ -86,9 +90,6 @@ function initInstructionsEditor() {
             }
         }
     });
-    
-    // Preview prompt
-    previewBtn.addEventListener('click', loadPromptPreview);
 }
 
 async function loadInstructions() {
@@ -129,40 +130,6 @@ async function saveInstructions() {
     } finally {
         saveBtn.disabled = false;
         saveBtn.innerHTML = '💾 Сохранить инструкции';
-    }
-}
-
-async function loadPromptPreview() {
-    const previewContainer = document.getElementById('promptPreview');
-    const previewBtn = document.getElementById('previewPrompt');
-    
-    previewBtn.disabled = true;
-    previewContainer.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
-    
-    try {
-        // Get context and instructions
-        const [contextResult, instructionsResult] = await Promise.all([
-            api.getContext(),
-            api.getInstructions()
-        ]);
-        
-        const context = contextResult.context || 'Контекст не загружен (нет файлов)';
-        const instructions = instructionsResult.instructions || '';
-        
-        // Build preview prompt
-        const preview = `
-=== КОНТЕКСТ ИЗ ФАЙЛОВ ===
-${context.substring(0, 2000)}${context.length > 2000 ? '\n... (обрезано для предпросмотра)' : ''}
-
-=== ДОПОЛНИТЕЛЬНЫЕ ИНСТРУКЦИИ ===
-${instructions || '(не заданы)'}`;
-
-        previewContainer.textContent = preview;
-        
-    } catch (error) {
-        previewContainer.textContent = 'Ошибка загрузки предпросмотра';
-    } finally {
-        previewBtn.disabled = false;
     }
 }
 

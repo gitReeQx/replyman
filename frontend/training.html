@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ru">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,9 +11,10 @@
     <link rel="stylesheet" href="css/styles.css">
     <link rel="icon" type="image/png" href="logo_rm.png">
 </head>
+
 <body>
     <button class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
-    
+
     <div class="app-layout">
         <!-- Sidebar -->
         <aside class="sidebar" id="sidebar">
@@ -20,7 +22,7 @@
                 <div class="logo-icon"><img src="logo_rm.png" alt="ReplyMan"></div>
                 <h1>ReplyMan</h1>
             </div>
-            
+
             <nav class="sidebar-nav">
                 <a href="dashboard.html" class="nav-item" data-page="chat">
                     <span>💬</span>
@@ -38,8 +40,12 @@
                     <span>⚙️</span>
                     <span>Инструкции ИИ</span>
                 </a>
+                <a href="billing.html" class="nav-item" data-page="billing">
+                    <span>💳</span>
+                    <span>Оплата</span>
+                </a>
             </nav>
-            
+
             <div class="sidebar-footer">
                 <div class="user-info">
                     <div class="user-avatar" id="userAvatar">U</div>
@@ -48,82 +54,73 @@
                         <div class="user-email" id="userEmail">user@email.com</div>
                     </div>
                 </div>
-                <button class="nav-item" id="logoutBtn" style="margin-top: 10px; color: rgba(255,255,255,0.7);">
+                <button class="nav-item" id="logoutBtn"
+                    style="margin-top: 10px; color: rgba(255,255,255,0.6); background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);">
                     <span>🚪</span>
                     <span>Выйти</span>
                 </button>
             </div>
         </aside>
-        
+
         <!-- Main Content -->
         <main class="main-content">
             <div class="page-header">
                 <h2>🎓 Тренировка общения</h2>
                 <p>Потренируйтесь общаться с клиентами в безопасной среде с обратной связью от ИИ</p>
             </div>
-            
+
             <div id="alertContainer"></div>
-            
+
             <!-- Training Status -->
             <div class="training-status inactive" id="trainingStatus">
                 <div class="status-dot"></div>
                 <span id="trainingStatusText">Тренировка не начата</span>
             </div>
-            
+
             <!-- Scenario Selection (shown when not in training) -->
             <div class="card mb-30" id="scenarioSelection">
                 <div class="card-header">
                     <h3 class="card-title">Выберите сценарий</h3>
                 </div>
-                
+
                 <div class="scenarios-grid" id="scenariosGrid">
                     <div class="scenario-card selected" data-scenario="general">
                         <div class="scenario-icon">💬</div>
                         <div class="scenario-title">Общение с клиентом</div>
                         <p class="scenario-desc">Типичные вопросы о продукции и услугах компании</p>
                     </div>
-                    
+
                     <div class="scenario-card" data-scenario="sales">
                         <div class="scenario-icon">💰</div>
                         <div class="scenario-title">Продажи</div>
                         <p class="scenario-desc">Работа с возражениями и завершение сделки</p>
                     </div>
-                    
+
                     <div class="scenario-card" data-scenario="support">
                         <div class="scenario-icon">🛠️</div>
                         <div class="scenario-title">Техподдержка</div>
                         <p class="scenario-desc">Решение проблем и ответы на жалобы клиентов</p>
                     </div>
-                    
-                    <div class="scenario-card" data-scenario="installation">
-                        <div class="scenario-icon">🔧</div>
-                        <div class="scenario-title">Монтаж</div>
-                        <p class="scenario-desc">Вопросы по установке и измерению изделий</p>
-                    </div>
                 </div>
-                
+
                 <div class="flex-center mt-30">
                     <button class="btn btn-primary btn-lg" id="startTrainingBtn">
                         🚀 Начать тренировку
                     </button>
                 </div>
             </div>
-            
+
             <!-- Training Chat (shown during training) -->
             <div class="card hidden" id="trainingChat">
                 <div class="chat-container">
                     <div class="chat-messages" id="trainingMessages">
                         <!-- Messages will be added here -->
                     </div>
-                    
+
                     <div class="chat-input-area">
                         <div class="chat-input-wrapper">
-                            <textarea 
-                                class="chat-input" 
-                                id="trainingInput" 
-                                placeholder="Введите ваш ответ клиенту..." 
-                                rows="1"
-                            ></textarea>
+                            <textarea class="chat-input" id="trainingInput" placeholder="Введите ваш ответ клиенту..."
+                                rows="1"></textarea>
                             <button class="chat-send-btn" id="trainingSendBtn" title="Отправить">
                                 <span>➤</span>
                             </button>
@@ -137,7 +134,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <!-- Training Feedback (shown after training) -->
             <div class="card hidden" id="trainingFeedback">
                 <div class="card-header">
@@ -146,7 +143,7 @@
                         🔄 Новая тренировка
                     </button>
                 </div>
-                
+
                 <div class="training-feedback">
                     <div class="feedback-score">
                         <div class="score-circle" id="feedbackScore">0</div>
@@ -155,33 +152,51 @@
                             <p class="text-secondary" style="margin: 5px 0 0;">из 10 баллов</p>
                         </div>
                     </div>
-                    
+
                     <div class="feedback-section" id="strengthsSection">
                         <h4>✅ Сильные стороны</h4>
                         <ul class="feedback-list" id="strengthsList"></ul>
                     </div>
-                    
+
                     <div class="feedback-section" id="weaknessesSection">
                         <h4>⚠️ Зоны роста</h4>
                         <ul class="feedback-list" id="weaknessesList"></ul>
                     </div>
-                    
+
                     <div class="feedback-section" id="recommendationsSection">
                         <h4>💡 Рекомендации</h4>
                         <ul class="feedback-list" id="recommendationsList"></ul>
                     </div>
-                    
+
                     <div class="feedback-section">
                         <h4>📝 Полный разбор</h4>
-                        <div id="fullFeedback" style="white-space: pre-wrap; line-height: 1.8; padding: 15px; background: var(--bg-primary); border-radius: var(--border-radius-sm);"></div>
+                        <div id="fullFeedback"
+                            style="white-space: pre-wrap; line-height: 1.8; padding: 15px; background: var(--bg-primary); border-radius: var(--border-radius-sm);">
+                        </div>
                     </div>
                 </div>
             </div>
         </main>
     </div>
-    
+
     <script src="js/config.js"></script>
     <script src="js/api.js"></script>
     <script src="js/training.js"></script>
+    <!-- Yandex.Metrika counter -->
+    <script type="text/javascript">
+        (function (m, e, t, r, i, k, a) {
+            m[i] = m[i] || function () { (m[i].a = m[i].a || []).push(arguments) };
+            m[i].l = 1 * new Date();
+            for (var j = 0; j < document.scripts.length; j++) { if (document.scripts[j].src === r) { return; } }
+            k = e.createElement(t), a = e.getElementsByTagName(t)[0], k.async = 1, k.src = r, a.parentNode.insertBefore(k, a)
+        })(window, document, 'script', 'https://mc.yandex.ru/metrika/tag.js?id=108494912',
+            'ym');
+        ym(108494912, 'init', { ssr: true, webvisor: true, clickmap: true, ecommerce: "dataLayer", referrer: document.referrer, url: location.href, accurateTrackBounce: true, trackLinks: true });
+    </script>
+    <noscript>
+        <div><img src="https://mc.yandex.ru/watch/108494912" style="position:absolute; left:-9999px;" alt="" /></div>
+    </noscript>
+    <!-- /Yandex.Metrika counter -->
 </body>
+
 </html>
