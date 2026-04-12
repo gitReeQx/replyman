@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import get_settings
-from app.routes import auth, chat, files, training, instructions
+from app.routes import auth, chat, files, training, instructions, payments
 
 settings = get_settings()
 
@@ -31,6 +31,7 @@ app.include_router(chat.router, prefix="/api/chat", tags=["Chat"])
 app.include_router(files.router, prefix="/api/files", tags=["Files"])
 app.include_router(training.router, prefix="/api/training", tags=["Training"])
 app.include_router(instructions.router, prefix="/api/instructions", tags=["Instructions"])
+app.include_router(payments.router, prefix="/api/payments", tags=["Payments"])
 
 @app.get("/")
 async def root():

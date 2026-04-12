@@ -1,6 +1,7 @@
 """
 Routes для чата - ИСПРАВЛЕННАЯ ВЕРСИЯ
 Контекст берётся из users.knowledge (не из файлов)
++ Проверка дневного лимита запросов по тарифу
 """
 from fastapi import APIRouter, Cookie, Header, Request
 from typing import Optional, Dict
@@ -15,6 +16,13 @@ logger = logging.getLogger(__name__)
 
 # In-memory session storage
 chat_sessions: Dict[str, list] = {}
+
+# Лимиты запросов по тарифам
+TARIFF_DAILY_LIMITS = {
+    "бесплатный": 3,
+    "старт": 20,
+    "бизнес": None,  # без ограничений
+}
 
 # Sessions from auth module
 try:
@@ -55,6 +63,30 @@ async def send_message(
     uid = get_user_id(session_token, fastapi_request, authorization)
     if not uid:
         return ChatResponse(success=False, message="Не авторизован", response="", session_id="")
+    
+    # ========== Проверка дневного лимита запросов ==========
+    try:
+        sub = await appwrite_service.get_user_subscription(uid)
+        tariff_id = sub.get("subscription_type", "бесплатный")
+        daily_limit = TARIFF_DAILY_LIMITS.get(tariff_id, 3)
+        
+        if daily_limit is not None:  # None = без ограничений (бизнес)
+            daily_count = await appwrite_service.get_daily_request_count(uid)
+            if daily_count >= daily_limit:
+                limit_msg = f"Лимит {daily_limit} запросов в день исчерпан. "
+                if tariff_id == "бесплатный":
+                    limit_msg += "Оплатите тариф, чтобы получить больше запросов."
+                else:
+                    limit_msg += "Повысьте тариф для большего количества."
+                return ChatResponse(
+                    success=False,
+                    message=limit_msg,
+                    response="",
+                    session_id=request.session_id or ""
+                )
+    except Exception as e:
+        logger.warning(f"Failed to check daily limit: {e}")
+        # Не блокируем чат, если проверка не удалась — пропускаем
     logger.info(f"=== CHAT from user: {uid} ===")
     print(f"=== CHAT: use_context={request.use_context}, uid={uid} ===")
     
@@ -111,10 +143,11 @@ async def send_message(
         "content": response_text
     })
     
-    # Инкрементируем счётчик сообщений
+    # Инкрементируем счётчик сообщений и дневной лимит запросов
     try:
         from app.services.appwrite_service import appwrite_service as _as
         await _as.increment_user_stat(uid, "messages_count")
+        await _as.increment_daily_request_count(uid)
     except Exception as e:
         print(f"Failed to increment messages_count: {e}")
     

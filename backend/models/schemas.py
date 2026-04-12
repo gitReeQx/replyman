@@ -17,6 +17,7 @@ class UserResponse(BaseModel):
     email: str
     name: Optional[str] = None
     created_at: Optional[datetime] = None
+    email_verified: Optional[bool] = None
 
 class AuthResponse(BaseModel):
     success: bool
@@ -93,3 +94,21 @@ class InstructionsResponse(BaseModel):
     success: bool
     message: str
     instructions: Optional[str] = None
+
+# Payment models
+class PaymentCreateRequest(BaseModel):
+    tariff_id: str  # "старт", "бизнес"
+    period: Optional[str] = "monthly"  # "monthly" | "yearly"
+
+class PaymentResponse(BaseModel):
+    success: bool
+    message: str
+    payment_id: Optional[str] = None
+    confirmation_url: Optional[str] = None
+
+class SubscriptionInfo(BaseModel):
+    subscription_type: str = "бесплатный"
+    subscription_status: str = "inactive"  # active, inactive, expired
+    subscription_paid_at: Optional[str] = None
+    subscription_expires_at: Optional[str] = None
+    yookassa_payment_id: Optional[str] = None

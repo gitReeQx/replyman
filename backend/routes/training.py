@@ -116,6 +116,20 @@ async def get_active_training(
         return {"success": False, "active": False, "message": str(e)}
 
 
+async def _check_training_access(user_id: str) -> Optional[str]:
+    """Проверить доступ к тренажёру. Возвращает None если доступ есть, иначе сообщение об ошибке."""
+    try:
+        sub = await appwrite_service.get_user_subscription(user_id)
+        tariff_id = sub.get("subscription_type", "бесплатный")
+        # Тренажёр доступен только на тарифе «Бизнес»
+        if tariff_id != "бизнес" or sub.get("subscription_status") != "active":
+            return "Тренажёр доступен только на тарифе «Бизнес». Оформите тариф на странице оплаты."
+        return None  # Доступ есть
+    except Exception as e:
+        logger.warning(f"Failed to check training access: {e}")
+        return None  # Если проверка не удалась — пропускаем
+
+
 @router.post("/start")
 async def start_training(
     request: TrainingStartRequest,
@@ -127,6 +141,11 @@ async def start_training(
     user_id = get_user_id_from_session(session_token, authorization)
     if not user_id:
         return TrainingResponse(success=False, message="Не авторизован")
+
+    # Проверка доступа к тренажёру
+    access_error = await _check_training_access(user_id)
+    if access_error:
+        return TrainingResponse(success=False, message=access_error)
 
     # Create new session
     session_id = str(uuid.uuid4())
@@ -185,6 +204,12 @@ async def send_training_message(
 
     user_id = get_user_id_from_session(session_token, authorization)
     session_id = request.session_id
+
+    # Проверка доступа к тренажёру
+    if user_id:
+        access_error = await _check_training_access(user_id)
+        if access_error:
+            return TrainingResponse(success=False, message=access_error)
 
     # Если сессии нет в памяти — пробуем восстановить из Appwrite
     if session_id not in training_sessions and user_id:

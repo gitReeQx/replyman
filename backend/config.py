@@ -11,6 +11,12 @@ class Settings(BaseSettings):
     appwrite_chats_collection_id: str = "chats"
     appwrite_files_bucket_id: str = "chat-files"
     appwrite_chunks_collection_id: str = "chunks"
+    appwrite_payments_collection_id: str = "payments"
+    
+    # YooKassa Configuration
+    yookassa_shop_id: str = ""  # Shop ID from YooKassa dashboard
+    yookassa_secret_key: str = ""  # Secret key from YooKassa dashboard
+    yookassa_vat_code: int = 1
     
     # OpenAI Compatible API
     openai_base_url: str = "https://routerai.ru/api/v1"
