@@ -142,6 +142,9 @@ async function handleFile(file) {
                     showResult(uploadResult);
                     loadStats();
                     loadFileNames();
+                    if (typeof window.updateDashboardState === 'function') {
+                        window.updateDashboardState();
+                    }
                 }, 500);
                 uploadArea.classList.remove('disabled');
                 return;
@@ -283,6 +286,9 @@ function pollTaskStatus(taskId) {
                             showResult(status.result);
                             loadStats();
                             loadFileNames();
+                            if (typeof window.updateDashboardState === 'function') {
+                                window.updateDashboardState();
+                            }
                         }, 500);
                     }
                     resolve(status.result);
@@ -301,7 +307,7 @@ function pollTaskStatus(taskId) {
 
             } catch (error) {
                 console.warn('Poll error (will retry):', error);
-                // Не прерываем polling при сетовой ошибке — пробуем ещё раз
+                // Не прерываем polling при сетевой ошибке — пробуем ещё раз
             }
         }, POLL_INTERVAL);
     });
@@ -462,6 +468,9 @@ async function clearKnowledge() {
             showAlert('База знаний и список файлов очищены', 'success');
             loadStats();
             loadFileNames();
+            if (typeof window.updateDashboardState === 'function') {
+                window.updateDashboardState();
+            }
         } else {
             showAlert('Ошибка: ' + (result.message || 'Unknown'), 'error');
         }

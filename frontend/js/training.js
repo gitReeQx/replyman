@@ -168,6 +168,18 @@ function initTraining() {
 }
 
 async function startTraining() {
+    // Проверка наличия базы знаний
+    try {
+        const statsRes = await api.request('/files/stats');
+        if (statsRes.success && (statsRes.knowledge_size || 0) === 0) {
+            showAlert('Нет базы знаний. Загрузите файлы в разделе «Файлы», чтобы начать тренировку.', 'error');
+            return;
+        }
+    } catch (e) {
+        console.warn('Could not check knowledge size', e);
+        // Продолжаем, даже если не удалось проверить
+    }
+
     const startBtn = document.getElementById('startTrainingBtn');
     startBtn.disabled = true;
     startBtn.innerHTML = '<span class="spinner" style="width: 20px; height: 20px;"></span>';

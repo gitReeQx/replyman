@@ -114,42 +114,62 @@ function renderPlanStatus(sub) {
     const expiryEl = document.getElementById('detailExpiry');
     const requestsEl = document.getElementById('detailRequests');
 
-    if (!sub || sub.subscription_type === 'бесплатный' || sub.subscription_status === 'inactive') {
+    if (!sub || sub.subscription_status === 'inactive' || sub.subscription_status === 'expired') {
         statusEl.className = 'plan-status inactive';
-        iconEl.textContent = '🆓';
-        titleEl.textContent = 'Бесплатный тариф';
-        subtitleEl.textContent = 'Ограниченный функционал. Оплатите тариф, чтобы получить больше возможностей.';
-        tariffEl.textContent = 'Бесплатный';
-        payDateEl.textContent = '—';
-        expiryEl.textContent = '—';
-        const reqs = sub?.daily_requests_count || 0;
-        requestsEl.textContent = `${reqs} / 3 в день`;
+        
+        if (sub && sub.subscription_status === 'expired') {
+            iconEl.textContent = '⚠️';
+            titleEl.textContent = 'Тариф истёк';
+            subtitleEl.textContent = 'Срок действия тарифа закончился. Оплатите снова, чтобы продолжить.';
+            tariffEl.textContent = getTariffDisplayName(sub.subscription_type);
+            payDateEl.textContent = formatDate(sub.subscription_paid_at);
+            expiryEl.textContent = formatDate(sub.subscription_expires_at);
+        } else {
+            iconEl.textContent = '🔒';
+            titleEl.textContent = 'Нет активной подписки';
+            subtitleEl.textContent = 'Оплатите тариф, чтобы получить доступ к чату с ИИ.';
+            tariffEl.textContent = '—';
+            payDateEl.textContent = '—';
+            expiryEl.textContent = '—';
+        }
+        
+        // Проверяем, есть ли подписка в очереди
+        const nextSub = sub?.next_subscription;
+        if (nextSub && nextSub.has_next) {
+            subtitleEl.textContent += ` Следующий тариф «${getTariffDisplayName(nextSub.next_subscription_type)}» ожидает активации.`;
+        }
+        
+        requestsEl.textContent = '0 / 0 (нет доступа)';
     } else if (sub.subscription_status === 'active') {
+        const isTrial = sub.yookassa_payment_id === 'trial';
         statusEl.className = 'plan-status active';
-        iconEl.textContent = '✅';
+        iconEl.textContent = isTrial ? '🎁' : '✅';
         titleEl.textContent = getTariffDisplayName(sub.subscription_type);
         
-        if (sub.subscription_type === 'старт') {
+        if (isTrial) {
+            subtitleEl.textContent = 'Пробный период (3 дня). Оплатите тариф, чтобы продолжить после окончания.';
+        } else if (sub.subscription_type === 'старт') {
             subtitleEl.textContent = 'Тариф активен. Доступно до 20 запросов в день.';
+        } else {
+            subtitleEl.textContent = 'Тариф активен. Без ограничений по запросам + тренажёр.';
+        }
+        
+        // Проверяем, есть ли подписка в очереди
+        const nextSub = sub.next_subscription;
+        if (nextSub && nextSub.has_next) {
+            subtitleEl.textContent += ` Следующий тариф «${getTariffDisplayName(nextSub.next_subscription_type)}» начнётся после окончания текущего.`;
+        }
+        
+        tariffEl.textContent = getTariffDisplayName(sub.subscription_type) + (isTrial ? ' (пробный)' : '');
+        payDateEl.textContent = formatDate(sub.subscription_paid_at);
+        expiryEl.textContent = formatDate(sub.subscription_expires_at);
+        
+        if (sub.subscription_type === 'старт') {
             const reqs = sub?.daily_requests_count || 0;
             requestsEl.textContent = `${reqs} / 20 в день`;
         } else {
-            subtitleEl.textContent = 'Тариф активен. Без ограничений по запросам + тренажёр.';
             requestsEl.textContent = 'Без ограничений';
         }
-        
-        tariffEl.textContent = getTariffDisplayName(sub.subscription_type);
-        payDateEl.textContent = formatDate(sub.subscription_paid_at);
-        expiryEl.textContent = formatDate(sub.subscription_expires_at);
-    } else if (sub.subscription_status === 'expired') {
-        statusEl.className = 'plan-status expired';
-        iconEl.textContent = '⚠️';
-        titleEl.textContent = 'Тариф истёк';
-        subtitleEl.textContent = 'Срок действия тарифа закончился. Оплатите снова, чтобы продолжить.';
-        tariffEl.textContent = getTariffDisplayName(sub.subscription_type);
-        payDateEl.textContent = formatDate(sub.subscription_paid_at);
-        expiryEl.textContent = formatDate(sub.subscription_expires_at);
-        requestsEl.textContent = '0 / 3 в день';
     }
 }
 
@@ -181,13 +201,18 @@ async function loadTariffs() {
 function renderTariffs(tariffs) {
     if (!tariffs) return;
     const grid = document.getElementById('tariffsGrid');
-    const currentType = currentPlan?.subscription_type || 'бесплатный';
+    const currentType = currentPlan?.subscription_type || '';
     const isActive = currentPlan?.subscription_status === 'active';
+    const nextSub = currentPlan?.next_subscription;
+    const hasNextSubscription = nextSub && nextSub.has_next;
 
     grid.innerHTML = tariffs.map(tariff => {
         const isCurrent = tariff.id === currentType && isActive;
         const isRecommended = tariff.recommended || false;
         const isFree = tariff.id === 'бесплатный';
+        
+        // Скрываем бесплатный тариф из карточек
+        if (isFree) return '';
         
         // Цена в зависимости от периода
         const price = selectedPeriod === 'yearly' ? tariff.price_yearly : tariff.price_monthly;
@@ -204,17 +229,17 @@ function renderTariffs(tariffs) {
         let btnHtml;
         if (isCurrent) {
             btnHtml = `<button class="tariff-btn btn-current" disabled>Текущий тариф</button>`;
-        } else if (isFree) {
-            btnHtml = `<button class="tariff-btn btn-free" disabled>Бесплатный</button>`;
+        } else if (hasNextSubscription) {
+            btnHtml = `<button class="tariff-btn btn-current" disabled>В очереди</button>`;
         } else {
             btnHtml = `<button class="tariff-btn btn-select" data-tariff="${tariff.id}" onclick="selectTariff('${tariff.id}')">Оплатить</button>`;
         }
 
         // Годовая инфа
         let yearlyInfo = '';
-        if (!isFree && selectedPeriod === 'yearly' && tariff.price_yearly_old) {
+        if (selectedPeriod === 'yearly' && tariff.price_yearly_old) {
             yearlyInfo = `<div class="tariff-yearly-info"><span class="old-price">${tariff.price_yearly_old.toLocaleString('ru-RU')} ₽</span> ${tariff.price_yearly.toLocaleString('ru-RU')} ₽ за год — экономия ${tariff.yearly_save.toLocaleString('ru-RU')} ₽</div>`;
-        } else if (!isFree) {
+        } else {
             yearlyInfo = `<div style="font-size:0.8rem; color:var(--text-secondary); margin-bottom:18px;">При оплате за год — скидка 15%</div>`;
         }
 
@@ -223,10 +248,7 @@ function renderTariffs(tariffs) {
                 <div class="tariff-name">${tariff.name}</div>
                 <div class="tariff-desc">${tariff.description}</div>
                 <div class="tariff-price">
-                    ${isFree 
-                        ? '<span class="amount">Бесплатно</span>' 
-                        : `<span class="amount">${price.toLocaleString('ru-RU')}</span><span class="currency">₽</span><span class="period">${periodLabel}</span>`
-                    }
+                    <span class="amount">${price.toLocaleString('ru-RU')}</span><span class="currency">₽</span><span class="period">${periodLabel}</span>
                 </div>
                 ${yearlyInfo}
                 <ul class="tariff-features">${featuresHtml}</ul>

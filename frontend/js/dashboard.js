@@ -14,7 +14,7 @@ async function initDashboard() {
     await checkAuth();
     initSidebar();
     initChat();
-    loadStats();
+    loadStats(); // также проверяет наличие знаний и управляет состоянием ввода
 }
 
 async function checkAuth() {
@@ -122,7 +122,6 @@ async function sendMessage() {
     showTypingIndicator();
     
     try {
-        // ========== ИСПРАВЛЕНО: Передаём контекст из users.knowledge ==========
         const result = await api.sendMessage(message, currentSessionId, true);
         
         // Remove typing indicator
@@ -134,7 +133,13 @@ async function sendMessage() {
             messageCount++;
             updateStats();
         } else {
-            await addMessage('Ошибка при получении ответа. Попробуйте ещё раз.', 'assistant');
+            // Проверяем, связано ли с подпиской
+            const msg = result.message || 'Ошибка при получении ответа.';
+            if (msg.includes('подписк') || msg.includes('тариф') || msg.includes('оплат')) {
+                await addMessage(`${msg} [Перейдите на страницу оплаты](billing.html)`, 'assistant');
+            } else {
+                await addMessage(msg, 'assistant');
+            }
         }
     } catch (error) {
         console.error('Send message error:', error);
@@ -304,6 +309,29 @@ async function loadStats() {
     } catch (error) {
         console.error('Failed to load stats:', error);
     }
+    
+    // Проверяем наличие базы знаний
+    try {
+        const statsRes = await api.request('/files/stats');
+        if (statsRes.success) {
+            const knowledgeSize = statsRes.knowledge_size || 0;
+            const chatInput = document.getElementById('chatInput');
+            const sendBtn = document.getElementById('sendBtn');
+            
+            if (knowledgeSize === 0) {
+                // Блокируем ввод
+                chatInput.disabled = true;
+                sendBtn.disabled = true;
+                chatInput.placeholder = 'Загрузите файлы для контекста в разделе «Файлы»';
+            } else {
+                chatInput.disabled = false;
+                sendBtn.disabled = false;
+                chatInput.placeholder = 'Введите ваш вопрос...';
+            }
+        }
+    } catch (e) {
+        console.warn('Could not check knowledge size', e);
+    }
 }
 
 function updateStats() {
@@ -323,3 +351,10 @@ function updateStats() {
         if (pct >= 80) fillEl.classList.add('warning');
     }
 }
+
+// Глобальная функция для обновления состояния (вызывается из files.js)
+window.updateDashboardState = function() {
+    if (typeof loadStats === 'function') {
+        loadStats();
+    }
+};
