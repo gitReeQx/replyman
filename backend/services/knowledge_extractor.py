@@ -94,6 +94,21 @@ class KnowledgeExtractor:
             base_url=settings.openai_base_url
         )
         self.model = settings.openai_model
+        
+        # Резервный провайдер
+        self.backup_client = None
+        self.backup_model = None
+        self.has_backup = False
+        
+        if settings.openai_api_key_backup and settings.openai_base_url_backup:
+            self.backup_client = AsyncOpenAI(
+                api_key=settings.openai_api_key_backup,
+                base_url=settings.openai_base_url_backup
+            )
+            self.backup_model = settings.openai_model_backup or self.model
+            self.has_backup = True
+            logger.info(f"KnowledgeExtractor: backup AI configured ({settings.openai_base_url_backup})")
+        
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
         self.max_concurrent = max_concurrent
@@ -145,8 +160,22 @@ class KnowledgeExtractor:
         reraise=True
     )
     async def _call_llm(self, messages, **kwargs):
-        """Вызов LLM с автоматическими повторными попытками при сетевых ошибках."""
-        return await self.client.chat.completions.create(messages=messages, **kwargs)
+        """Вызов LLM с автоматическими повторными попытками при сетевых ошибках.
+        Если основной провайдер недоступен — переключается на резервный."""
+        try:
+            return await self.client.chat.completions.create(messages=messages, **kwargs)
+        except Exception as e:
+            if self.has_backup:
+                logger.warning(f"Primary LLM failed in KnowledgeExtractor: {e}. Trying backup...")
+                try:
+                    backup_kwargs = dict(kwargs)
+                    backup_kwargs['model'] = self.backup_model
+                    return await self.backup_client.chat.completions.create(messages=messages, **backup_kwargs)
+                except Exception as backup_err:
+                    logger.error(f"Backup LLM also failed in KnowledgeExtractor: {backup_err}")
+                    raise  # Поднимаем оригинальную ошибку для tenacity retry
+            else:
+                raise
 
     async def _extract_from_chunk(self, chunk: str, chunk_index: int) -> str:
         """Извлекает знания из одного чанка. При ошибке возвращает сырой чанк (не теряем данные)."""

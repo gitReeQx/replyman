@@ -26,26 +26,6 @@ router = APIRouter()
 
 TARIFFS = [
     {
-        "id": "бесплатный",
-        "name": "Бесплатный",
-        "description": "Для знакомства с сервисом",
-        "price_monthly": 0,
-        "price_yearly": 0,
-        "price_yearly_old": 0,
-        "yearly_save": 0,
-        "recommended": False,
-        "daily_limit": 3,
-        "training_available": False,
-        "features": [
-            {"text": "До 3 запросов в день", "included": True},
-            {"text": "Загрузка файлов (до 30MB)", "included": True},
-            {"text": "Умный чат с ИИ", "included": True},
-            {"text": "Настройка инструкций ИИ", "included": True},
-            {"text": "🎓 Тренажёр общения", "included": False},
-            {"text": "Приоритетная поддержка", "included": False},
-        ]
-    },
-    {
         "id": "старт",
         "name": "Старт",
         "description": "Для небольших команд и знакомства с сервисом",
@@ -62,7 +42,7 @@ TARIFFS = [
             {"text": "Умный чат с ИИ", "included": True},
             {"text": "Настройка инструкций ИИ", "included": True},
             {"text": "Email поддержка", "included": True},
-            {"text": "🎓 Тренажёр общения", "included": False},
+            {"text": "Тренажёр общения", "included": False},
         ]
     },
     {
@@ -81,7 +61,7 @@ TARIFFS = [
             {"text": "Загрузка файлов (до 30MB)", "included": True},
             {"text": "Умный чат с ИИ", "included": True},
             {"text": "Настройка инструкций ИИ", "included": True},
-            {"text": "🎓 Тренажёр общения с ИИ-клиентом", "included": True},
+            {"text": "Тренажёр общения с ИИ-клиентом", "included": True},
             {"text": "Приоритетная поддержка", "included": True},
         ]
     }
@@ -142,15 +122,20 @@ async def get_subscription(
         sub = await appwrite_service.get_user_subscription(user_id)
         
         # Добавляем информацию о лимите запросов на сегодня
-        tariff_info = next((t for t in TARIFFS if t["id"] == sub.get("subscription_type", "бесплатный")), TARIFFS[0])
-        daily_limit = tariff_info.get("daily_limit")
+        tariff_info = next((t for t in TARIFFS if t["id"] == sub.get("subscription_type", "")), None)
         
-        # Считаем запросы за сегодня
-        daily_count = await appwrite_service.get_daily_request_count(user_id)
-        
-        sub["daily_requests_count"] = daily_count
-        sub["daily_requests_limit"] = daily_limit  # None = без ограничений
-        sub["training_available"] = tariff_info.get("training_available", False)
+        if not tariff_info:
+            # Нет тарифа (подписка неактивна / бесплатный)
+            daily_count = await appwrite_service.get_daily_request_count(user_id)
+            sub["daily_requests_count"] = daily_count
+            sub["daily_requests_limit"] = 0  # Нет доступа без подписки
+            sub["training_available"] = False
+        else:
+            daily_limit = tariff_info.get("daily_limit")
+            daily_count = await appwrite_service.get_daily_request_count(user_id)
+            sub["daily_requests_count"] = daily_count
+            sub["daily_requests_limit"] = daily_limit  # None = без ограничений
+            sub["training_available"] = tariff_info.get("training_available", False)
         
         return {"success": True, "subscription": sub}
     except Exception as e:
@@ -163,8 +148,10 @@ async def get_subscription(
                 "subscription_paid_at": None,
                 "subscription_expires_at": None,
                 "daily_requests_count": 0,
-                "daily_requests_limit": 3,
+                "daily_requests_limit": 0,
                 "training_available": False,
+                "next_subscription": {"has_next": False},
+                "trial_activated": False,
             }
         }
 
@@ -190,9 +177,6 @@ async def create_payment(
     if not tariff:
         return {"success": False, "message": "Тариф не найден"}
     
-    if tariff["price_monthly"] == 0:
-        return {"success": False, "message": "Бесплатный тариф не требует оплаты"}
-    
     # Определяем период и цену
     period = payment_data.period or "monthly"  # monthly | yearly
     if period == "yearly":
@@ -202,12 +186,12 @@ async def create_payment(
         price = tariff["price_monthly"]
         period_label_en = "month"
     
-    # Проверить, нет ли уже активной подписки на этот тариф
+    # Проверить текущую подписку — разрешаем предоплату (подписка встанет в очередь)
     try:
         current_sub = await appwrite_service.get_user_subscription(user_id)
-        if (current_sub.get("subscription_status") == "active" and 
-            current_sub.get("subscription_type") == payment_data.tariff_id):
-            return {"success": False, "message": "У вас уже активен этот тариф"}
+        # Проверяем, нет ли уже подписки в очереди на этот же тариф
+        if current_sub.get("next_subscription", {}).get("has_next"):
+            return {"success": False, "message": "У вас уже есть подписка в очереди. Дождитесь её активации."}
     except:
         pass
     
@@ -384,23 +368,39 @@ async def yookassa_webhook(request: Request):
                 status="succeeded"
             )
             
+            # Проверяем текущую подписку пользователя
+            current_sub = await appwrite_service.get_user_subscription(user_id)
+            current_status = current_sub.get("subscription_status", "inactive")
+            
             # Определяем длительность
             duration = TARIFF_DURATIONS.get(period, timedelta(days=30))
+            duration_days = duration.days
             now = datetime.now()
-            expires_at = now + duration
             
-            await appwrite_service.activate_subscription(
-                user_id=user_id,
-                subscription_type=tariff_id,
-                paid_at=now.isoformat(),
-                expires_at=expires_at.isoformat(),
-                payment_id=payment_id
-            )
-            
-            # Сбрасываем счётчик запросов при активации тарифа
-            await appwrite_service.reset_daily_request_count(user_id)
-            
-            logger.info(f"Tariff activated: user={user_id}, tariff={tariff_id}, period={period}, expires={expires_at}")
+            if current_status == "active":
+                # У пользователя уже есть активная подписка — ставим новую в очередь
+                # Она начнёт действовать сразу после окончания текущей
+                await appwrite_service.queue_next_subscription(
+                    user_id=user_id,
+                    subscription_type=tariff_id,
+                    paid_at=now.isoformat(),
+                    duration_days=duration_days,
+                    payment_id=payment_id
+                )
+                logger.info(f"Tariff queued: user={user_id}, tariff={tariff_id}, period={period}. Current subscription still active.")
+            else:
+                # Нет активной подписки — активируем сразу
+                expires_at = now + duration
+                await appwrite_service.activate_subscription(
+                    user_id=user_id,
+                    subscription_type=tariff_id,
+                    paid_at=now.isoformat(),
+                    expires_at=expires_at.isoformat(),
+                    payment_id=payment_id
+                )
+                # Сбрасываем счётчик запросов при активации тарифа
+                await appwrite_service.reset_daily_request_count(user_id)
+                logger.info(f"Tariff activated: user={user_id}, tariff={tariff_id}, period={period}, expires={expires_at}")
             
         except Exception as e:
             logger.error(f"Error activating tariff: {e}")
@@ -502,22 +502,47 @@ async def check_payment_status(
                     if meta_user_id:
                         try:
                             sub = await appwrite_service.get_user_subscription(meta_user_id)
-                            if sub.get("subscription_status") != "active" or sub.get("subscription_type") != tariff_id:
-                                # Подписка ещё не активирована — активируем (fallback)
-                                duration = TARIFF_DURATIONS.get(period, timedelta(days=30))
-                                now = datetime.now()
-                                expires_at = now + duration
-                                
+                            current_status = sub.get("subscription_status", "inactive")
+                            
+                            # Проверяем, нужно ли активировать или поставить в очередь
+                            needs_action = False
+                            if current_status == "active":
+                                # Уже есть активная — ставим в очередь если ещё нет
+                                if not sub.get("next_subscription", {}).get("has_next"):
+                                    needs_action = True
+                                    action_type = "queue"
+                            else:
+                                # Нет активной — активируем
+                                if sub.get("subscription_type") != tariff_id or current_status != "active":
+                                    needs_action = True
+                                    action_type = "activate"
+                            
+                            if needs_action:
                                 await appwrite_service.update_payment_status(payment_id, "succeeded")
-                                await appwrite_service.activate_subscription(
-                                    user_id=meta_user_id,
-                                    subscription_type=tariff_id,
-                                    paid_at=now.isoformat(),
-                                    expires_at=expires_at.isoformat(),
-                                    payment_id=payment_id
-                                )
-                                await appwrite_service.reset_daily_request_count(meta_user_id)
-                                logger.info(f"Fallback activation via check-payment: user={meta_user_id}, tariff={tariff_id}")
+                                duration = TARIFF_DURATIONS.get(period, timedelta(days=30))
+                                duration_days = duration.days
+                                now = datetime.now()
+                                
+                                if action_type == "queue":
+                                    await appwrite_service.queue_next_subscription(
+                                        user_id=meta_user_id,
+                                        subscription_type=tariff_id,
+                                        paid_at=now.isoformat(),
+                                        duration_days=duration_days,
+                                        payment_id=payment_id
+                                    )
+                                    logger.info(f"Fallback queue via check-payment: user={meta_user_id}, tariff={tariff_id}")
+                                else:
+                                    expires_at = now + duration
+                                    await appwrite_service.activate_subscription(
+                                        user_id=meta_user_id,
+                                        subscription_type=tariff_id,
+                                        paid_at=now.isoformat(),
+                                        expires_at=expires_at.isoformat(),
+                                        payment_id=payment_id
+                                    )
+                                    await appwrite_service.reset_daily_request_count(meta_user_id)
+                                    logger.info(f"Fallback activation via check-payment: user={meta_user_id}, tariff={tariff_id}")
                         except Exception as e:
                             logger.error(f"Fallback activation error: {e}")
                 
@@ -580,17 +605,17 @@ async def check_access(
     
     try:
         sub = await appwrite_service.get_user_subscription(user_id)
-        tariff_id = sub.get("subscription_type", "бесплатный")
-        tariff_info = next((t for t in TARIFFS if t["id"] == tariff_id), TARIFFS[0])
+        tariff_id = sub.get("subscription_type", "")
+        tariff_info = next((t for t in TARIFFS if t["id"] == tariff_id), None)
         
         # Проверяем, активен ли тариф
         status = sub.get("subscription_status", "inactive")
-        if tariff_id == "бесплатный":
-            # Бесплатный тариф всегда "активен"
-            status = "active"
         
-        if status != "active" and tariff_id != "бесплатный":
-            return {"success": True, "allowed": False, "message": "Тариф истёк. Оплатите для продолжения.", "tariff": tariff_id}
+        if status != "active":
+            return {"success": True, "allowed": False, "message": "Подписка не активна. Оплатите тариф для доступа.", "tariff": tariff_id or "нет"}
+        
+        if not tariff_info:
+            return {"success": True, "allowed": False, "message": "Подписка не найдена. Оплатите тариф.", "tariff": tariff_id or "нет"}
         
         if feature == "training":
             allowed = tariff_info.get("training_available", False)

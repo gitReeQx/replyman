@@ -19,7 +19,6 @@ chat_sessions: Dict[str, list] = {}
 
 # Лимиты запросов по тарифам
 TARIFF_DAILY_LIMITS = {
-    "бесплатный": 3,
     "старт": 20,
     "бизнес": None,  # без ограничений
 }
@@ -68,16 +67,23 @@ async def send_message(
     try:
         sub = await appwrite_service.get_user_subscription(uid)
         tariff_id = sub.get("subscription_type", "бесплатный")
-        daily_limit = TARIFF_DAILY_LIMITS.get(tariff_id, 3)
+        sub_status = sub.get("subscription_status", "inactive")
+        
+        # Если подписка не активна — нет доступа к чату
+        if sub_status != "active":
+            return ChatResponse(
+                success=False,
+                message="Для доступа к чату необходима платная подписка. Оформите тариф на странице оплаты.",
+                response="",
+                session_id=request.session_id or ""
+            )
+        
+        daily_limit = TARIFF_DAILY_LIMITS.get(tariff_id, 0)  # 0 = нет доступа если тариф неизвестен
         
         if daily_limit is not None:  # None = без ограничений (бизнес)
             daily_count = await appwrite_service.get_daily_request_count(uid)
             if daily_count >= daily_limit:
-                limit_msg = f"Лимит {daily_limit} запросов в день исчерпан. "
-                if tariff_id == "бесплатный":
-                    limit_msg += "Оплатите тариф, чтобы получить больше запросов."
-                else:
-                    limit_msg += "Повысьте тариф для большего количества."
+                limit_msg = f"Лимит {daily_limit} запросов в день исчерпан. Повысьте тариф для большего количества."
                 return ChatResponse(
                     success=False,
                     message=limit_msg,

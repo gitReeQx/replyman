@@ -7,9 +7,11 @@ from app.config import get_settings
 import secrets
 import hashlib
 from datetime import datetime
+import logging
 
 router = APIRouter()
 settings = get_settings()
+logger = logging.getLogger(__name__)
 
 # Simple in-memory session storage (use Redis in production)
 sessions = {}
@@ -444,7 +446,17 @@ async def confirm_email_verification(data: EmailVerifyConfirm):
             if session.get("user_id") == data.user_id:
                 sessions[token]["email_verified"] = True
         
-        return {"success": True, "message": "Email успешно подтверждён"}
+        # Активируем 3-дневный бесплатный триал тарифа «Бизнес» для нового пользователя
+        try:
+            trial_result = await appwrite_service.activate_trial_subscription(data.user_id)
+            if trial_result:
+                logger.info(f"Trial subscription activated for user {data.user_id} after email verification")
+            else:
+                logger.info(f"Trial subscription NOT activated for user {data.user_id} (already used or error)")
+        except Exception as te:
+            logger.warning(f"Failed to activate trial subscription: {te}")
+        
+        return {"success": True, "message": "Email успешно подтверждён. Вам предоставлен бесплатный пробный период 3 дня на тарифе «Бизнес»."}
     else:
         return {"success": False, "message": f"Ошибка подтверждения: {result.get('error', 'Ссылка недействительна или устарела')}"}
 

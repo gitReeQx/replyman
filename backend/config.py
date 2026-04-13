@@ -18,10 +18,19 @@ class Settings(BaseSettings):
     yookassa_secret_key: str = ""  # Secret key from YooKassa dashboard
     yookassa_vat_code: int = 1
     
-    # OpenAI Compatible API
+    # OpenAI Compatible API (Primary)
     openai_base_url: str = "https://routerai.ru/api/v1"
     openai_api_key: str = "sk-94sIAhbB5hDHt60JvS_uLKs5SV8Tgrb7"
     openai_model: str = "qwen/qwen3.5-flash-02-23"
+    
+    # Backup OpenAI Compatible API (fallback when primary is unavailable)
+    openai_base_url_backup: str = "https://polza.ai/api/v1"
+    openai_api_key_backup: str = "pza_OsLpwqSmaGhOoCIiktV6rDOzXGKZ5zrH"
+    openai_model_backup: str = "qwen/qwen3.5-flash-02-23"
+    
+    # AI Failover Settings
+    ai_failover_max_fails: int = 3  # Number of consecutive fails before circuit opens
+    ai_failover_reset_seconds: int = 30  # Seconds before trying primary again after circuit opens
     
     # App Configuration
     secret_key: str = "t787hhd5fg5e5g5w5x3dgvc__iohvdb963287ds"

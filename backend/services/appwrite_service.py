@@ -20,7 +20,7 @@ from typing import Optional, Dict, Any, List
 import json
 import io
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -31,7 +31,10 @@ _USER_FIELDS = [
     "file_names", "files_count", "messages_count", "trainings_count", "subscription_type",
     "subscription_status", "subscription_paid_at", "subscription_expires_at", "yookassa_payment_id",
     "daily_requests_count", "daily_requests_date",
-    "active_training"
+    "active_training",
+    # Новые поля: очередь подписок и триал
+    "next_subscription_type", "next_subscription_expires_at", "next_subscription_paid_at",
+    "next_yookassa_payment_id", "trial_activated"
 ]
 
 
@@ -825,8 +828,36 @@ class AppwriteService:
                             sub_status = "expired"
                             # Обновляем статус в БД
                             await self._update_subscription_status(user_id, "expired")
+                            # Проверяем, есть ли подписка в очереди — если да, активируем
+                            next_type = rd.get("next_subscription_type", "")
+                            if next_type:
+                                await self.activate_queued_subscription(user_id)
+                                # Перечитываем данные после активации
+                                _, rd2 = await self._get_user_row(user_id)
+                                if rd2:
+                                    return {
+                                        "subscription_type": rd2.get("subscription_type", "бесплатный"),
+                                        "subscription_status": rd2.get("subscription_status", "inactive"),
+                                        "subscription_paid_at": rd2.get("subscription_paid_at", None),
+                                        "subscription_expires_at": rd2.get("subscription_expires_at", None),
+                                        "yookassa_payment_id": rd2.get("yookassa_payment_id", None),
+                                        "next_subscription": {
+                                            "has_next": bool(rd2.get("next_subscription_type", "")),
+                                            "next_subscription_type": rd2.get("next_subscription_type", ""),
+                                            "next_subscription_paid_at": rd2.get("next_subscription_paid_at", None),
+                                        },
+                                        "trial_activated": bool(rd2.get("trial_activated", False)),
+                                    }
                     except (ValueError, TypeError):
                         pass
+
+                # Информация об очереди подписок
+                next_type = rd.get("next_subscription_type", "")
+                next_sub = {
+                    "has_next": bool(next_type),
+                    "next_subscription_type": next_type,
+                    "next_subscription_paid_at": rd.get("next_subscription_paid_at", None),
+                }
 
                 return {
                     "subscription_type": sub_type,
@@ -834,6 +865,8 @@ class AppwriteService:
                     "subscription_paid_at": rd.get("subscription_paid_at", None),
                     "subscription_expires_at": expires_at or None,
                     "yookassa_payment_id": rd.get("yookassa_payment_id", None),
+                    "next_subscription": next_sub,
+                    "trial_activated": bool(rd.get("trial_activated", False)),
                 }
             return {
                 "subscription_type": "бесплатный",
@@ -841,6 +874,8 @@ class AppwriteService:
                 "subscription_paid_at": None,
                 "subscription_expires_at": None,
                 "yookassa_payment_id": None,
+                "next_subscription": {"has_next": False},
+                "trial_activated": False,
             }
         except Exception as e:
             logger.error(f"get_user_subscription error: {e}")
@@ -850,6 +885,8 @@ class AppwriteService:
                 "subscription_paid_at": None,
                 "subscription_expires_at": None,
                 "yookassa_payment_id": None,
+                "next_subscription": {"has_next": False},
+                "trial_activated": False,
             }
 
     async def activate_subscription(
@@ -887,6 +924,172 @@ class AppwriteService:
             return False
         except Exception as e:
             logger.error(f"_update_subscription_status error: {e}")
+            return False
+
+    # ========================================
+    # Trial subscription (3-day free "Бизнес" after email verification)
+    # ========================================
+
+    async def activate_trial_subscription(self, user_id: str) -> bool:
+        """
+        Активировать бесплатный 3-дневный триал тарифа «Бизнес» для нового пользователя.
+        Вызывается один раз после подтверждения email.
+        """
+        try:
+            row_id, rd = await self._get_user_row(user_id)
+            if not row_id:
+                logger.warning(f"activate_trial_subscription: user row not found for {user_id}")
+                return False
+
+            # Проверяем, не был ли триал уже активирован
+            trial_activated = rd.get("trial_activated", False)
+            if trial_activated:
+                logger.info(f"Trial already activated for user {user_id}, skipping")
+                return False
+
+            now = datetime.now()
+            expires_at = now + timedelta(days=3)
+
+            update = self._build_user_update(rd, {
+                "subscription_type": "бизнес",
+                "subscription_status": "active",
+                "subscription_paid_at": now.isoformat(),
+                "subscription_expires_at": expires_at.isoformat(),
+                "yookassa_payment_id": "trial",
+                "trial_activated": True,
+                "daily_requests_count": 0,
+                "daily_requests_date": now.strftime("%Y-%m-%d"),
+            })
+            success = self._do_update_row(row_id, update)
+
+            if success:
+                logger.info(f"Trial subscription activated for user {user_id}, expires at {expires_at}")
+            return success
+        except Exception as e:
+            logger.error(f"activate_trial_subscription error: {e}")
+            return False
+
+    async def is_trial_activated(self, user_id: str) -> bool:
+        """Проверить, был ли триал уже активирован для пользователя"""
+        try:
+            _, rd = await self._get_user_row(user_id)
+            if rd:
+                return bool(rd.get("trial_activated", False))
+            return False
+        except Exception as e:
+            logger.error(f"is_trial_activated error: {e}")
+            return False
+
+    # ========================================
+    # Subscription queuing (stacking prepaid subscriptions)
+    # ========================================
+
+    async def queue_next_subscription(
+        self,
+        user_id: str,
+        subscription_type: str,
+        paid_at: str,
+        duration_days: int,
+        payment_id: str
+    ) -> bool:
+        """
+        Поставить подписку в очередь — она начнёт действовать сразу после окончания текущей.
+        duration_days: длительность подписки в днях (30 или 365).
+        Реальная дата expires_at вычисляется при активации из очереди.
+        """
+        try:
+            row_id, rd = await self._get_user_row(user_id)
+            if not row_id:
+                logger.warning(f"queue_next_subscription: user row not found for {user_id}")
+                return False
+
+            # Сохраняем длительность в paid_at формате: "duration:30" или "duration:365"
+            # При активации из очереди мы пересчитаем реальную дату
+            update = self._build_user_update(rd, {
+                "next_subscription_type": subscription_type,
+                "next_subscription_paid_at": paid_at,
+                "next_subscription_expires_at": f"duration:{duration_days}",
+                "next_yookassa_payment_id": payment_id,
+            })
+            success = self._do_update_row(row_id, update)
+
+            if success:
+                logger.info(f"Queued next subscription for user {user_id}: {subscription_type} ({duration_days} days)")
+            return success
+        except Exception as e:
+            logger.error(f"queue_next_subscription error: {e}")
+            return False
+
+    async def get_next_subscription(self, user_id: str) -> Dict[str, Any]:
+        """Получить информацию об очереди подписок"""
+        try:
+            _, rd = await self._get_user_row(user_id)
+            if rd:
+                next_type = rd.get("next_subscription_type", "")
+                if next_type:
+                    return {
+                        "has_next": True,
+                        "next_subscription_type": next_type,
+                        "next_subscription_paid_at": rd.get("next_subscription_paid_at", None),
+                        "next_subscription_expires_at": rd.get("next_subscription_expires_at", None),
+                        "next_yookassa_payment_id": rd.get("next_yookassa_payment_id", None),
+                    }
+            return {"has_next": False}
+        except Exception as e:
+            logger.error(f"get_next_subscription error: {e}")
+            return {"has_next": False}
+
+    async def activate_queued_subscription(self, user_id: str) -> bool:
+        """
+        Активировать подписку из очереди. Вызывается когда текущая подписка истекает.
+        Дата окончания очереди рассчитывается от момента активации, а не от момента оплаты.
+        """
+        try:
+            row_id, rd = await self._get_user_row(user_id)
+            if not row_id:
+                return False
+
+            next_type = rd.get("next_subscription_type", "")
+            if not next_type:
+                logger.info(f"No queued subscription for user {user_id}")
+                return False
+
+            next_paid_at = rd.get("next_subscription_paid_at", "")
+            next_expires_raw = rd.get("next_subscription_expires_at", "")
+            next_payment_id = rd.get("next_yookassa_payment_id", "")
+
+            # Парсим длительность из очереди (формат "duration:30" или "duration:365")
+            duration_days = 30  # по умолчанию
+            if next_expires_raw.startswith("duration:"):
+                try:
+                    duration_days = int(next_expires_raw.split(":")[1])
+                except (ValueError, IndexError):
+                    duration_days = 30
+
+            now = datetime.now()
+            expires_at = now + timedelta(days=duration_days)
+
+            update = self._build_user_update(rd, {
+                "subscription_type": next_type,
+                "subscription_status": "active",
+                "subscription_paid_at": next_paid_at or now.isoformat(),
+                "subscription_expires_at": expires_at.isoformat(),
+                "yookassa_payment_id": next_payment_id,
+                # Очищаем очередь
+                "next_subscription_type": "",
+                "next_subscription_expires_at": "",
+                "next_subscription_paid_at": "",
+                "next_yookassa_payment_id": "",
+                "daily_requests_count": 0,
+                "daily_requests_date": now.strftime("%Y-%m-%d"),
+            })
+            success = self._do_update_row(row_id, update)
+
+            if success:
+                logger.info(f"Activated queued subscription for user {user_id}: {next_type}, expires at {expires_at}")
+            return success
+        except Exception as e:
+            logger.error(f"activate_queued_subscription error: {e}")
             return False
 
     # ========================================

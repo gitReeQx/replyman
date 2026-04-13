@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import get_settings
 from app.routes import auth, chat, files, training, instructions, payments
+from app.services.ai_service import ai_service
 
 settings = get_settings()
 
@@ -40,3 +41,9 @@ async def root():
 @app.get("/api/health")
 async def health():
     return {"status": "healthy"}
+
+@app.get("/api/ai-status")
+async def ai_status():
+    """Проверить статус основного и резервного AI провайдеров"""
+    result = await ai_service.health_check()
+    return {"success": True, "data": result}
